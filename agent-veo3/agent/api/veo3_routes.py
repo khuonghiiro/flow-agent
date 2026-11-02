@@ -11,7 +11,7 @@ import logging
 from typing import Literal, Optional
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from agent.services.flow_client import get_flow_client
 from agent.services.skill_tree_pipeline import (
@@ -31,7 +31,12 @@ class EnhancedGenerateImageRequest(BaseModel):
     project_id: Optional[str] = ""
     aspect_ratio: str = "IMAGE_ASPECT_RATIO_PORTRAIT"
     user_paygate_tier: str = "PAYGATE_TIER_ONE"
+    image_model: Optional[str] = None
+    count: int = Field(default=1, ge=1, le=4)
+    seed: Optional[int] = Field(default=None, ge=1, le=1_000_000_000)
+    reference_media_ids: Optional[list[str]] = None
     character_media_ids: Optional[list[str]] = None
+    base_media_id: Optional[str] = None
     title: Optional[str] = None
     display_name: Optional[str] = None
 
@@ -116,9 +121,11 @@ async def generate_image_enhanced(body: EnhancedGenerateImageRequest):
     if not client.connected:
         raise HTTPException(503, "Extension not connected")
     pid = await _get_or_detect_project_id(client, body.project_id or "")
-    payload = body.model_dump()
+    payload = body.model_dump(exclude={"reference_media_ids"})
     target_name = payload.pop("display_name", None) or payload.pop("title", None)
     payload["project_id"] = pid
+    refs = list(dict.fromkeys((body.reference_media_ids or []) + (body.character_media_ids or [])))
+    payload["character_media_ids"] = refs or None
     result = await client.generate_images(**payload)
     if result.get("error") or (isinstance(result.get("status"), int) and result["status"] >= 400):
         raise HTTPException(result.get("status", 502), result.get("error", result.get("data")))

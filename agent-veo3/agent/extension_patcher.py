@@ -496,17 +496,22 @@ def patch_websocket_heartbeat(app):
 def mount_extension_routes(app):
     """Mount Veo3 routers for flow and requests extensions, overriding upstream routes."""
     try:
-        from fastapi.routing import _IncludedRouter
         from agent.api.veo3_routes import flow_veo3_router, requests_veo3_router
 
-        # Strip shadowed routes from upstream routers
-        veo3_paths = {getattr(r, "path", "") for r in flow_veo3_router.routes}
-        for route in app.router.routes:
-            if isinstance(route, _IncludedRouter) and route.original_router is not flow_veo3_router:
-                route.original_router.routes = [
-                    r for r in route.original_router.routes
-                    if getattr(r, "path", "") not in veo3_paths
-                ]
+        # Collect paths to override (with /api and without /api)
+        veo3_paths = set()
+        for r in flow_veo3_router.routes + requests_veo3_router.routes:
+            p = getattr(r, "path", "")
+            veo3_paths.add(p)
+            veo3_paths.add("/api" + p)
+            if p.startswith("/api"):
+                veo3_paths.add(p[4:])
+
+        # Filter out existing routes that match veo3 paths
+        app.router.routes = [
+            r for r in app.router.routes
+            if getattr(r, "path", "") not in veo3_paths
+        ]
 
         # Mount with /api prefix (primary standard FlowKit convention)
         app.include_router(flow_veo3_router, prefix="/api")
@@ -521,7 +526,7 @@ def mount_extension_routes(app):
 
         logger.info("Mounted Veo3 custom routes to FastAPI application")
     except Exception as exc:
-        logger.error("Failed to mount Veo3 routes: %s", exc)
+        logger.error("Failed to mount Veo3 routes: %s", exc, exc_info=True)
 
 
 def apply_all_patches(app=None):
