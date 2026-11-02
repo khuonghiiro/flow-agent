@@ -1,64 +1,63 @@
-# Quy Tắc Tạo Ảnh Frame Animate / Sprite Sheet Làm Tài Nguyên Phim (VFX Assets)
+# Quy Tắc Chuẩn: Tạo Animation Sprite Sheet Làm Tài Nguyên Phim (VFX Assets)
 
-Tài liệu này là quy tắc bắt buộc áp dụng khi nhận yêu cầu tạo ảnh **Animation Frame / Sprite Sheet / Asset VFX** phục vụ làm phim, game 2D hoặc cắt ghép hậu kỳ (compositing).
+Tài liệu này là quy tắc bắt buộc áp dụng khi nhận yêu cầu tạo ảnh **Animation Frame / Sprite Sheet / Asset VFX** phục vụ làm phim hoạt hình 2D, game engine hoặc compositing hậu kỳ.
 
 ---
 
-## 1. Tỉ lệ khung hình & Bố cục lưới linh hoạt theo hướng chuyển động (Aspect Ratio & Grid Topology)
+## 1. Định dạng tiêu chuẩn: Lưới 1:1 với 16 Frames (Standard 4x4 Grid)
 
-Tuyệt đối không mặc định dùng tỉ lệ `1:1` cho mọi loại hoạt ảnh. Phải chọn tỉ lệ ảnh và bố cục hàng/cột sao cho **từng ô con (cell)** khớp với quỹ đạo và hình dáng của đối tượng:
+- **Tỉ lệ ảnh tổng thể**: `1:1` (`IMAGE_ASPECT_RATIO_SQUARE`).
+- **Bố cục lưới**: Chính xác 16 frames riêng biệt, xếp thành 4 hàng × 4 cột (thứ tự đọc: từ trái sang phải, từ trên xuống dưới).
+- **Phân bổ không gian**: Mỗi frame chiếm 1 ô ảo 1/4 × 1/4 của bức ảnh.
 
-| Loại chuyển động & Đối tượng | Tỉ lệ ảnh tổng thể | Bố cục lưới đề xuất | Tỉ lệ từng ô con (Cell) |
+---
+
+## 2. Quy Tắc Chọn Màu Nền Thông Minh (Adaptive Chroma Background Selection)
+
+> ⚠️ **LỖI CỐT LÕI CẦN TRÁNH**: Màu nền bị **tương đồng hoặc hòa lẫn với chi tiết trong frame** (ví dụ: hiệu ứng phát sáng lấp lánh có quầng tán sắc tím/hồng mà lại dùng nền Magenta `#FF00FF` dẫn đến khi tách phông sẽ bị ăn lẹm chi tiết, hoặc dính viền hồng lem nhem quanh tia sáng).
+
+### Bảng Ma Trận Chọn Màu Nền Theo Chủng Loại Hiệu Ứng:
+
+| Loại Hiệu Ứng | Bảng Màu Hiệu Ứng | Màu Nền Tối Ưu Được Chọn | Lý Do Kỹ Thuật Tách Phông |
 |---|---|---|---|
-| **Chuyển động dọc / Dài cao** (Tia sét giáng từ trời, cột lửa, tia laser vệ tinh, thác nước, giọt rơi) | `16:9` (Landscape) hoặc `9:16` (Portrait) | **16:9**: 2 hàng x 4 cột (8 frames) hoặc 2 hàng x 6 cột (12 frames)<br>**9:16**: 4 hàng x 2 cột (8 frames) | Khung hình chữ nhật dọc cao, cho phép tia sét/cột năng lượng vươn dài hùng vĩ mà không bị lùn ép |
-| **Chuyển động ngang / Quét dài** (Kiếm khí chém ngang, đạn pháo, phi tiêu, lốc xoáy lướt ngang) | `16:9` (Landscape) | 4 hàng x 2 cột hoặc 3 hàng x 3 cột | Khung hình chữ nhật rộng bề ngang |
-| **Tỏa tròn / Đối xứng tâm** (Đốm lửa trại, vụ nổ tròn, khiên bảo vệ ma thuật, vòng xoáy portal) | `1:1` (Square) | 4 hàng x 4 cột (16 frames) hoặc 3 hàng x 3 cột (9 frames) | Khung vuông cân xứng 1:1 |
+| **Ánh sáng quang học, Tia Lấp Lánh (Sparkle, Lens Flare, Glint, Twinkle)** | Trắng, Vàng kim (Gold), Cyan, Xanh ngọc | **Pure Chroma Green `#00FF00`** HOẶC **Pure Pitch Black `#000000`** | - Nền Green `#00FF00`: Tương phản tuyệt đối với tia sáng vàng/trắng/cyan, không bị dính sắc tố đỏ/tím.<br>- Nền Black `#000000`: Chuẩn VFX Additive Blending (`Screen` / `Add`), tự động trong suốt trong Premiere/AE/Unity, giữ trọn vẹn hào quang mờ và bụi sáng mịn 100%. |
+| **Lửa, Dung nham, Năng lượng nhiệt** | Đỏ, Cam, Vàng, Hồng | **Pure Chroma Green `#00FF00`** hoặc **Pure Deep Blue `#0000FF`** | Tuyệt đối **CẤM dùng Magenta `#FF00FF`** vì Magenta chứa kênh Đỏ (R=255) sẽ ăn đứt viền lửa khi keying. |
+| **Sét điện, Băng giá, Nước, Phép thuật xanh** | Xanh dương, Cyan, Trắng tinh | **Pure Magenta `#FF00FF`** hoặc **Pure Chroma Green `#00FF00`** | Magenta tách biệt hoàn toàn với dải màu Cyan/Blue. |
+| **Chất độc, Axit, Cây cỏ, Phép thuật mộc** | Xanh lá cây, Lục bảo | **Pure Magenta `#FF00FF`** | Tuyệt đối **CẤM dùng Green `#00FF00`** vì sẽ làm biến mất chi tiết hiệu ứng. |
+
+### Nguyên tắc bất biến về màu nền:
+1. **Nền phẳng tuyệt đối (Pure Solid Flat)**: Chỉ duy nhất 1 mã màu đồng nhất, không gradient, không bóng đổ (drop shadow), không vignette, không vết loang.
+2. **Khóa tràn màu (Zero Color Spill / Zero Bloom Bleed)**: Hiệu ứng phát sáng không được làm lem màu hào quang hòa trộn vào nền. Ranh giới giữa ánh sáng và màu nền phải trong trẻo, sắc nét.
+3. **Cấm dùng màu nền trên chủ thể**: Nếu chọn nền Green `#00FF00`, tuyệt đối không dùng sắc xanh lá trên hiệu ứng. Nếu chọn nền Black `#000000`, hiệu ứng phải là ánh sáng tự thân rực rỡ, không vẽ khói đen hay bóng xám.
 
 ---
 
-## 2. Quy tắc cô lập nền (Chroma Key & Isolation)
+## 3. Quy Tắc Giới Hạn Bounding Box & Đệm An Toàn (STRICT BBOX CONTAINMENT)
 
-Mục đích của asset là để diễn hoạt và chèn vào cảnh quay bất kỳ:
-1. **TUYỆT ĐỐI KHÔNG VẼ ĐƯỜNG KẺ MẶT ĐẤT (NO GROUND LINE / NO HORIZON)**:
-   - Không được vẽ đường chân trời, vạch kẻ ngang, mặt cỏ, sàn đá hay bất kỳ ranh giới tiếp xúc nào.
-   - Nếu có va chạm (impact), chỉ vẽ **năng lượng va chạm phát sáng** (sóng xung kích năng lượng - shockwave ring, tia điện phụ - electric arcs, tia lửa bắn - sparks, bụi khói phát sáng). Khi tách nền, chỉ các hạt năng lượng này hiển thị trên mặt đất của cảnh phim thực tế.
-2. **Không có lưới chia ô hay số đếm**:
-   - `No grid lines, no cell borders, no frame divider lines, no numbers, no text labels`.
-3. **Nền phẳng tuyệt đối (Chroma Key Flat Background)**:
-   - Nền chuẩn màu: Pure solid flat magenta `#FF00FF` (hoặc pure bright lime green `#00FF00` nếu chủ thể có màu tím/hồng).
-   - `No gradient, no vignette, no drop shadow, no ambient occlusion, no light bloom or glow bleeding onto the background`.
-4. **Khoảng cách đệm giữa các ô (Margin & Clearance)**:
-   - Mỗi hình vẽ phải được căn giữa ô của chính nó với khoảng trống an toàn rộng rãi (`generous empty space between frames`).
-   - Mọi tia lửa, mảnh vỡ, tàn tro phải nằm trọn vẹn bên trong ô, không được chạm mép hay lem sang ô bên cạnh.
+1. **Hiệu ứng phải nằm trọn vẹn 100% bên trong Bounding Box của từng ô**:
+   - Ngay cả ở frame có năng lượng bùng nổ lớn nhất (vòng shockwave lan rộng nhất, tia sáng lóe to nhất), toàn bộ hình ảnh phải **thu nhỏ vừa vặn (scaled down)** để nằm gọn trong tâm ô.
+   - **Khoảng đệm an toàn tối thiểu 20-25% (Safety Margin / Padding)**: Xung quanh 4 phía (trên, dưới, trái, phải) của mỗi frame luôn luôn phải có khoảng trống màu nền bao bọc, tuyệt đối không có hạt hay tia sáng nào chạm tới hoặc tiến sát ranh giới ô.
+2. **CẤM TUYỆT ĐỐI hiện tượng cắt mép (Zero Edge-Clipping)**:
+   - Các vòng shockwave, tia sao, cánh hào quang phải tròn trịa, tự nhiên, không bao giờ được có đường cắt thẳng cụt cạnh do chạm mép ô.
+   - Không được để hiệu ứng của ô này lem sang ô bên cạnh.
 
 ---
 
-## 3. Tính logic về thời gian và sự kiện (Temporal Progression & Consistency)
+## 4. Quy Tắc CẤM Viền Khung & Phối Cảnh Tiếp Đất (ZERO BORDERS)
 
-Tất cả các frame phải tuân thủ nghiêm ngặt tính nhân quả theo thời gian:
-1. **Giai đoạn trước va chạm (Anticipation / Traveling phase)**:
-   - Ở các frame đầu khi tia năng lượng/vật thể đang di chuyển từ trên xuống hoặc chưa tới đích: **Mặt đáy của frame phải hoàn toàn sạch sẽ, chỉ có màu nền phẳng**.
-   - Tuyệt đối **không vẽ trước** vết nứt, vết cháy, hay tia nổ ở dưới đất khi vật thể chưa chạm tới đất.
-2. **Giai đoạn va chạm bùng nổ (Peak Impact frame)**:
-   - Tia sét/vật thể chạm tới mặt phẳng tiếp xúc ➔ bùng phát năng lượng chói sáng cực đại, tia lửa điện và vòng shockwave lan tỏa.
-3. **Giai đoạn phân rã & tan biến (Dissipation / Fade phase)**:
-   - Năng lượng nứt nhỏ, mờ dần, các tia lửa tản rộng và biến mất hoàn toàn vào hư không (`dissipate cleanly to clear background`).
-   - Không để lại vết nhơ đen hoặc vệt bẩn vĩnh viễn ở các frame cuối (trừ khi yêu cầu rõ là decal cháy).
-4. **Đồng nhất góc nhìn (Camera & Scale Consistency)**:
-   - Giữ nguyên 100% tiêu cự, góc máy camera, tỉ lệ phóng to/thu nhỏ (scale) và vị trí tâm va chạm qua tất cả các frame.
+1. **TUYỆT ĐỐI CẤM MỌI DẠNG ĐƯỜNG KẺ & VIỀN Ô (NO BORDERS / NO GRID LINES)**:
+   - `Strictly NO grid lines, NO black frame borders, NO box outlines, NO cell dividers, NO separator lines, NO numbers, NO text`.
+   - Toàn bộ khoảng cách giữa các frame là **màu nền thuần chất, liền mạch và liên tục**.
+2. **TUYỆT ĐỐI CẤM ĐƯỜNG KẺ MẶT ĐẤT (NO GROUND LINE / NO HORIZON)**:
+   - Cấm vẽ đường chân trời, vạch kẻ ngang đáy, sàn nhà, cỏ, đá hay vết nứt cố định.
+   - **Minh họa vật lý tiếp đất theo phối cảnh elip (Perspective Ground Contact Ellipse)**: Khi hiệu ứng có tương tác mặt đất, vòng shockwave hoặc tia tiếp đất phải được vẽ theo dạng **hình elip dẹp nằm ngang theo luật phối cảnh 3D**, thể hiện rõ chiều sâu vật lý mà không cần vẽ vạch kẻ đất.
 
 ---
 
-## 4. Cấu trúc Prompt chuẩn mực khi tạo Frame Animate
+## 5. Quy Tắc Nhân Quả Thời Gian 16 Frames (Strict Temporal Causality)
 
-Mỗi prompt tạo Animation Sprite Sheet phải gồm đầy đủ 5 phần rõ ràng:
-1. **Format & Grid Specification**: Tỉ lệ ảnh (`16:9` / `9:16` / `1:1`), số lượng frame chính xác, số hàng x số cột, khoảng cách đệm, không lưới, không vạch kẻ.
-2. **Background & Color Isolation**: Nền màu chuẩn chroma key `#FF00FF`, không gradient, không kẻ đất, cấm dùng màu nền trên chủ thể.
-3. **Subject & Art Style**: Phong cách vẽ (2D hand-drawn, cel shading, anime VFX), bảng màu chủ thể, viền nét sạch (clean sharp outlines).
-4. **Temporal Progression (Mô tả chi tiết từng nhóm frame)**:
-   - Frame bắt đầu: chưa chạm đất, đáy hoàn toàn sạch.
-   - Frame va chạm: bùng nổ năng lượng, tia điện hồ quang tỏa tròn.
-   - Frame phân rã: năng lượng tắt dần, tia lửa tan biến sạch sẽ.
-5. **Strict Prohibitions**:
-   - `CRITICAL: Do NOT draw any horizontal ground line, floor line, horizon separator, or surface border.`
-   - `CRITICAL: Do NOT draw pre-existing impact crater or scorch marks before the strike occurs.`
+- **Frames 1 - 3 (Khởi đầu)**: Xuất hiện điểm sáng/năng lượng ban đầu, vùng tiếp xúc hoàn toàn sạch sẽ.
+- **Frames 4 - 6 (Mở rộng)**: Tia sáng/năng lượng nở dần, đạt độ rõ nét.
+- **Frames 7 - 9 (Cực đại - Peak Brilliance/Impact)**: Đạt đỉnh điểm chói sáng/bùng nổ, vẫn nằm trọn trong vùng an toàn (safe area).
+- **Frames 10 - 12 (Phân rã - Fracture/Decay)**: Thu nhỏ, đứt gãy thành các hạt bụi sáng/tia nhỏ tản ra ngoài.
+- **Frames 13 - 16 (Tàn lụi & Tan biến - Clean Fadeout)**: Mờ dần và tan biến sạch sẽ 100% vào nền, không để lại đốm bẩn hay vệt đen.
