@@ -185,6 +185,24 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
   ['requestHeaders', 'extraHeaders'],
 );
 
+let _latestVideoUrls = [];
+if (chrome.webRequest?.onBeforeRequest) {
+  chrome.webRequest.onBeforeRequest.addListener(
+    (details) => {
+      const u = details.url || '';
+      if (u.includes('.mp4') || u.includes('/video/') || u.includes('flow-content.google') || (u.includes('/asb/') && !u.includes('=s512') && !u.includes('=s32'))) {
+        console.log('[FlowAgent] Captured media URL:', u);
+        _latestVideoUrls.push({ url: u, time: Date.now(), method: details.method });
+        if (_latestVideoUrls.length > 50) _latestVideoUrls.shift();
+        if (ws?.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'video_request_captured', url: u }));
+        }
+      }
+    },
+    { urls: ['<all_urls>'] }
+  );
+}
+
 let _openingFlowTab = false;
 
 async function captureTokenFromFlowTab({ createIfMissing = false } = {}) {
@@ -229,6 +247,48 @@ async function captureTokenFromFlowTab({ createIfMissing = false } = {}) {
   } catch (e) {
     console.error('[FlowAgent] Token refresh failed:', e);
   }
+}
+
+async function openProjectTab(projectId) {
+  if (!projectId) return { error: 'MISSING_PROJECT_ID' };
+  const cleanId = String(projectId).trim();
+  const targetUrl = `https://flow.google.com/project/${cleanId}`;
+  const tabs = await chrome.tabs.query({ url: flowUrls });
+
+  // 1. Try to find a tab already at this exact project
+  let matchTab = tabs.find((t) => t.url && t.url.includes(cleanId));
+  if (matchTab) {
+    await chrome.tabs.update(matchTab.id, { active: true });
+    if (matchTab.windowId) {
+      try { await chrome.windows.update(matchTab.windowId, { focused: true }); } catch {}
+    }
+    return { ok: true, tabId: matchTab.id, action: 'activated' };
+  }
+
+  // 2. If there is a tab at flow.google.com (home or explore), navigate it to the project
+  let homeTab = tabs.find((t) => {
+    try {
+      const u = new URL(t.url);
+      return u.hostname === 'flow.google.com' && (u.pathname === '/' || u.pathname === '' || u.pathname === '/explore');
+    } catch {
+      return false;
+    }
+  });
+
+  if (homeTab) {
+    await chrome.tabs.update(homeTab.id, { url: targetUrl, active: true });
+    if (homeTab.windowId) {
+      try { await chrome.windows.update(homeTab.windowId, { focused: true }); } catch {}
+    }
+    return { ok: true, tabId: homeTab.id, action: 'navigated' };
+  }
+
+  // 3. Otherwise create a new tab and focus window
+  const newTab = await chrome.tabs.create({ url: targetUrl, active: true });
+  if (newTab.windowId) {
+    try { await chrome.windows.update(newTab.windowId, { focused: true }); } catch {}
+  }
+  return { ok: true, tabId: newTab.id, action: 'opened' };
 }
 
 // ─── WebSocket to Agent ─────────────────────────────────────
@@ -279,7 +339,7 @@ function connectToAgent() {
         await handleTrpcRequest(msg);
       } else if (msg.method === 'solve_captcha') {
         await handleSolveCaptcha(msg);
-      } else if (msg.method === 'reload_extension') {
+      } else if (msg.method === 'reload_extension' || msg.type === 'reload_extension') {
         chrome.runtime.reload();
       } else if (msg.method === 'reload_flow_tab') {
         const tabs = await chrome.tabs.query({ url: flowUrls });
@@ -297,6 +357,9 @@ function connectToAgent() {
           title: t.title,
         }));
         sendToAgent({ id: msg.id, result: { tabs: list } });
+      } else if (msg.method === 'open_project_tab') {
+        const res = await openProjectTab(msg.params?.projectId);
+        sendToAgent({ id: msg.id, result: res });
       } else if (msg.method === 'submit_ui_prompt') {
         const tabs = await chrome.tabs.query({ url: flowUrls });
         let candidate = tabs.find((t) => t.active && !t.discarded) || tabs[0];
@@ -465,6 +528,28 @@ function connectToAgent() {
               }
               return { matches, scriptCount: allScripts.length, scannedCount: scanned.length, scannedSample: scanned.slice(0, 10) };
             },
+          });
+          sendToAgent({ id: msg.id, result: injected?.result });
+        } catch (e) {
+          sendToAgent({ id: msg.id, result: { error: e.message } });
+        }
+      } else if (msg.method === 'get_captured_video_urls') {
+        sendToAgent({ id: msg.id, result: _latestVideoUrls });
+      } else if (msg.method === 'exec_tab') {
+        const tabs = await chrome.tabs.query({ url: flowUrls });
+        let candidate = tabs.find((t) => t.active && !t.discarded) || tabs[0];
+        if (!candidate) {
+          sendToAgent({ id: msg.id, result: { error: 'NO_FLOW_TAB' } });
+          return;
+        }
+        try {
+          const [injected] = await chrome.scripting.executeScript({
+            target: { tabId: msg.params?.tabId || candidate.id },
+            world: 'MAIN',
+            func: (codeStr) => {
+              try { return { result: eval(codeStr) }; } catch (e) { return { error: e.message }; }
+            },
+            args: [msg.params?.code || ''],
           });
           sendToAgent({ id: msg.id, result: injected?.result });
         } catch (e) {
@@ -726,8 +811,8 @@ async function runBatchRpc(cmd) {
   const [injected] = await chrome.scripting.executeScript({
     target: { tabId: tab.id },
     world: 'MAIN',
-    args: [cmd.rpcid, freq, MAX_RPC_TEXT, cmd.match || null, cmd.customPath || null],
-    func: async (rpcid, freqStr, maxText, match, customPath) => {
+    args: [cmd.rpcid, freq, MAX_RPC_TEXT, cmd.match || null, cmd.customPath || null, cmd.projectId || null],
+    func: async (rpcid, freqStr, maxText, match, customPath, projectId) => {
       const wiz = globalThis.WIZ_global_data || {};
       const at = wiz.SNlM0e;
       const sid = wiz.FdrFJe;
@@ -736,8 +821,11 @@ async function runBatchRpc(cmd) {
 
       const reqid = Math.floor(Math.random() * 900000) + 100000;
       // Match Flow's own WIZ metadata. GEM_PIX_2 (Nano Banana Pro) rejects
-      // image generation when source-path is missing even though Lite may not.
-      const sourcePath = location.pathname || '/';
+      // image generation when source-path is missing or generic '/'.
+      let sourcePath = projectId ? `/project/${projectId}` : (location.pathname || '/');
+      if (sourcePath === '/' && projectId) {
+        sourcePath = `/project/${projectId}`;
+      }
       const hl = (document.documentElement.lang || navigator.language || 'en').split('-')[0];
       const url = customPath
         ? `${customPath}?bl=${encodeURIComponent(bl || '')}&f.sid=${encodeURIComponent(sid || '')}&hl=${encodeURIComponent(hl)}&_reqid=${reqid}&rt=c`
@@ -792,39 +880,52 @@ async function handleBatchRpc(msg) {
     return;
   }
 
+  // Extract or receive projectId
+  let projectId = params?.projectId || null;
+  if (!projectId && typeof freq === 'string') {
+    const uuidMatch = freq.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    if (uuidMatch) projectId = uuidMatch[0];
+  }
+
   setState('running');
   const hasCaptcha = !!captchaAction;
   if (hasCaptcha) metrics.requestCount++;
-  // Polls and listing lookups run constantly; only the generates are worth
-  // a row in the log the popup shows.
-  const visible = hasCaptcha;
+  // Polls and listing lookups run constantly; only generates and project creation
+  // are worth a row in the log the popup/sidepanel shows.
+  const visible = hasCaptcha || rpcid === 'jHPbke';
   const _RPC_LABELS = {
-    ogiZ0b: 'Gen Image', eb1hJf: 'Gen Video', YhhmEf: 'Gen Video (text)',
-    nprQif: 'Gen Video (chain)', MZZa6b: 'Gen Video (refs)',
-    maseQ: 'Upload Image', SPrCad: 'Upscale Image',
-    jHPbke: 'Create Project', jwpduf: 'Poll Operation',
-    Zzl0ze: 'Project Media', as29s: 'Get Media',
+    ogiZ0b: 'GEN_IMG', eb1hJf: 'GEN_VID', YhhmEf: 'GEN_VID',
+    nprQif: 'GEN_VID', MZZa6b: 'GEN_VID_REF',
+    maseQ: 'UPLOAD', SPrCad: 'UPSCALE',
+    jHPbke: 'CREATE_PROJECT', jwpduf: 'POLL',
+    Zzl0ze: 'LIST_MEDIA', as29s: 'MEDIA',
+    o8DA4: 'RENAME_PROJECT', mYWVGd: 'RENAME',
   };
   const logType = _RPC_LABELS[rpcid] || `RPC:${rpcid}`;
   if (visible) {
     addRequestLog({
-      id, type: logType, time: new Date().toISOString(),
+      id, projectId, type: logType, time: new Date().toISOString(),
       status: 'processing', error: null, outputUrl: null, url: rpcid,
       payloadSummary: freq.slice(0, 200),
     });
   }
 
   try {
-    const out = await runBatchRpc({ id, rpcid, freq, captchaAction, match, customPath });
+    const out = await runBatchRpc({ id, rpcid, freq, captchaAction, match, customPath, projectId });
+    if (rpcid === 'jHPbke' && out.text) {
+      const matchId = out.text.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+      if (matchId) projectId = matchId[0];
+    }
+
     if (out.error) {
       if (hasCaptcha) { metrics.failedCount++; metrics.lastError = out.error; }
-      if (visible) updateRequestLog(id, { status: 'failed', error: out.error });
+      if (visible) updateRequestLog(id, { status: 'failed', error: out.error, projectId });
       sendToAgent({ id, status: 502, error: out.error });
     } else {
       if (hasCaptcha) { metrics.successCount++; metrics.lastError = null; }
       if (visible) {
         updateRequestLog(id, {
-          status: 'success', httpStatus: out.status,
+          status: 'success', httpStatus: out.status, projectId,
           responseSummary: (out.text || '').slice(0, 300),
         });
       }
@@ -833,7 +934,7 @@ async function handleBatchRpc(msg) {
   } catch (e) {
     const err = e?.message || 'BATCH_RPC_FAILED';
     if (hasCaptcha) { metrics.failedCount++; metrics.lastError = err; }
-    if (visible) updateRequestLog(id, { status: 'failed', error: err });
+    if (visible) updateRequestLog(id, { status: 'failed', error: err, projectId });
     sendToAgent({ id, status: 500, error: err });
   }
 
@@ -1084,6 +1185,13 @@ chrome.runtime.onMessage.addListener((msg, _, reply) => {
           .catch((e) => reply({ error: e.message }));
       }
     }).catch((e) => reply({ error: e.message }));
+    return true;
+  }
+
+  if (msg.type === 'OPEN_PROJECT_TAB') {
+    openProjectTab(msg.projectId)
+      .then((res) => reply(res))
+      .catch((e) => reply({ error: e.message }));
     return true;
   }
 

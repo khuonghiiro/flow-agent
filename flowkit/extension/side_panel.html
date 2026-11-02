@@ -280,17 +280,33 @@
 
     .td-id {
       font-size: 9px;
-      color: var(--accent);
+      color: #3b82f6;
       font-variant-numeric: tabular-nums;
       letter-spacing: 0.03em;
       cursor: pointer;
       text-decoration: underline;
-      text-decoration-color: transparent;
-      transition: text-decoration-color 0.15s;
+      text-decoration-color: rgba(59, 130, 246, 0.4);
+      transition: all 0.15s ease;
+      font-weight: 600;
+      white-space: nowrap;
     }
 
     .td-id:hover {
-      text-decoration-color: var(--accent);
+      color: #60a5fa;
+      text-decoration-color: #60a5fa;
+    }
+
+    .td-id .id-link-icon {
+      font-size: 10px;
+      margin-left: 2px;
+      opacity: 0.7;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .td-id:hover .id-link-icon {
+      opacity: 1;
+      transform: translateX(1px);
     }
 
     /* ── Detail modal ──────────────────────────────── */
@@ -573,6 +589,9 @@
         <button class="detail-close" id="detail-close">&times;</button>
       </div>
       <div class="detail-body" id="detail-body"></div>
+      <div class="detail-footer" style="padding: 10px 14px; border-top: 1px solid var(--border); display: flex; gap: 8px;">
+        <button class="btn btn-primary" id="modal-btn-open-project" style="flex: 1; display: none;">🔗 Open Project on Flow</button>
+      </div>
     </div>
   </div>
 

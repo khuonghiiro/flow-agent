@@ -9,6 +9,7 @@ Dynamically enriches FlowKit core modules at runtime with Veo3 advanced capabili
 import asyncio
 import json
 import logging
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -86,6 +87,8 @@ def patch_db_and_crud():
             material: str = None,
             allow_music: bool = False,
             allow_voice: bool = False,
+            video_model_family: str = "veo",
+            **kwargs,
         ) -> dict:
             if id:
                 existing = await crud.get_project(id)
@@ -100,6 +103,8 @@ def patch_db_and_crud():
                         material=material,
                         allow_music=int(allow_music),
                         allow_voice=int(allow_voice),
+                        video_model_family=video_model_family or "veo",
+                        **kwargs,
                     )
                     db = await schema.get_db()
                     return await crud._get_with_db(db, "project", "id", id)
@@ -114,6 +119,8 @@ def patch_db_and_crud():
                 material=material,
                 allow_music=allow_music,
                 allow_voice=allow_voice,
+                video_model_family=video_model_family,
+                **kwargs,
             )
 
         crud.create_project = enhanced_create_project
@@ -149,7 +156,8 @@ def patch_flow_client():
             duration: Optional[float] = 4.0,
             crop_coordinates: Optional[dict] = None,
         ) -> dict:
-            from agent.config import USE_BATCH_RPC, FLOW_ALLOW_DEGRADED
+            USE_BATCH_RPC = getattr(config, "USE_BATCH_RPC", True)
+            FLOW_ALLOW_DEGRADED = getattr(config, "FLOW_ALLOW_DEGRADED", True)
             from agent.services import flow_batch as fb
             from agent.services.flow_client import _as_pending_operation, _batch_error, _unsupported
 
@@ -184,7 +192,7 @@ def patch_flow_client():
                         model=batch_model,
                     )
                     payload = await self._batch_payload(
-                        fb.RPC_GEN_VIDEO, freq, fb.CAPTCHA_VIDEO, timeout=120
+                        fb.RPC_GEN_VIDEO, freq, fb.CAPTCHA_VIDEO, project_id=pid, timeout=120
                     )
                     operation = fb.read_operation(payload)
                 except Exception as e:
@@ -290,42 +298,21 @@ def patch_flow_client():
         orig_create_project = FlowClient.create_project
 
         async def enhanced_create_project(self, project_title: str, tool_name: str = "PINHOLE") -> dict:
-            from agent.config import USE_BATCH_RPC
             from agent.services import flow_batch as fb
-            if not USE_BATCH_RPC:
-                return await orig_create_project(self, project_title, tool_name)
-
             title = (project_title or f"Project {int(time.time())}").strip()
             try:
-                inner_create = ["projects/*", [None, [title]], [None, 22]]
-                freq_create = fb.build_envelope("jHPbke", inner_create)
-                payload = await self._batch_payload("jHPbke", freq_create, timeout=60)
-
-                new_project_id = None
-                if isinstance(payload, list) and len(payload) > 0:
-                    new_project_id = payload[0]
-                elif isinstance(payload, str):
-                    new_project_id = payload
-
-                if not new_project_id or not isinstance(new_project_id, str):
-                    raise fb.FlowBatchError(f"Could not parse project ID from jHPbke response: {payload}")
-
-                logger.info("Successfully created Flow project via jHPbke RPC: %s ('%s')", new_project_id, title)
-
-                try:
-                    inner_rename = [f"projects/{new_project_id}", [title], [["project_title"]], [None, 22]]
-                    freq_rename = fb.build_envelope("o8DA4", inner_rename)
-                    await self._batch_payload("o8DA4", freq_rename, timeout=30)
-                    logger.info("Successfully synced project title via o8DA4 RPC: '%s'", title)
-                except Exception as ren_err:
-                    logger.warning("Optional project rename via o8DA4: %s", ren_err)
-
-                self.override_flow_project_id = new_project_id
-                config.FLOW_PROJECT_ID = new_project_id
-
-                return {"status": 200, "data": {"projectId": new_project_id}}
+                res = await orig_create_project(self, title, tool_name)
+                if isinstance(res, dict) and res.get("status") == 200 and res.get("data", {}).get("projectId"):
+                    new_project_id = res["data"]["projectId"]
+                    self.override_flow_project_id = new_project_id
+                    config.FLOW_PROJECT_ID = new_project_id
+                    logger.info("Successfully created Flow project: %s ('%s')", new_project_id, title)
+                    return res
+                if isinstance(res, dict) and res.get("error"):
+                    logger.error("Create project returned error: %s", res["error"])
+                return res
             except Exception as e:
-                logger.error("Batch project creation (jHPbke) failed: %s", e)
+                logger.error("Batch project creation failed: %s", e)
                 pinned = self.flow_project_id()
                 if pinned:
                     logger.warning("Falling back to pinned project %s", pinned)

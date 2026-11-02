@@ -103,9 +103,11 @@ function renderLog(entries) {
 
     const hasDetails = entry.url || entry.payloadSummary || entry.responseSummary || error;
 
+    const pid = entry.projectId || '';
+
     return `<div class="entry" data-idx="${i}">
       <div class="entry-row">
-        <span class="entry-id">${escHtml(shortId)}</span>
+        <span class="entry-id" title="${pid ? `Open project ${pid} on Google Flow` : 'Click to open project on Flow'}">${escHtml(shortId)} <span class="id-link-icon">↗</span></span>
         <span class="entry-type">${escHtml(type)}</span>
         <span class="entry-time">${escHtml(time)}</span>
         ${badgeHtml(status)}
@@ -115,9 +117,39 @@ function renderLog(entries) {
     </div>`;
   }).join('');
 
+  // Open project on ID click
+  list.querySelectorAll('.entry-id').forEach((idSpan) => {
+    idSpan.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const entryDiv = idSpan.closest('.entry');
+      const idx = entryDiv.getAttribute('data-idx');
+      const entry = entries[idx];
+      let pid = entry?.projectId || null;
+
+      if (!pid && entry?.id) {
+        try {
+          const resp = await fetch(`http://127.0.0.1:8100/api/requests/${entry.id}`);
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data.project_id) pid = data.project_id;
+          }
+        } catch {}
+      }
+
+      if (pid) {
+        chrome.runtime.sendMessage({ type: 'OPEN_PROJECT_TAB', projectId: pid }, (res) => {
+          if (chrome.runtime.lastError) {
+            window.open(`https://flow.google.com/project/${pid}`, '_blank');
+          }
+        });
+      }
+    });
+  });
+
   // Toggle expand on row click
   list.querySelectorAll('.entry-row').forEach((row) => {
-    row.addEventListener('click', () => {
+    row.addEventListener('click', (e) => {
+      if (e.target.closest('.entry-id')) return;
       const entry = row.closest('.entry');
       if (entry.querySelector('.entry-details')) {
         entry.classList.toggle('open');

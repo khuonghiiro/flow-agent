@@ -1,7 +1,26 @@
-const AGENT_WS_URL = 'ws://127.0.0.1:9222';
-const API_KEY = 'AIzaSyBtrm0o5ab1c-Ec8ZuLcGt3oJAA5VWt3pY';
-const RECAPTCHA_SITE_KEY = '6LdsFiUsAAAAAIjVDZcuLhaHiDn5nnHVXVRQGeMV';
+/**
+ * Flow Kit — Chrome Extension Background Service Worker
+ *
+ * Connects to local Python agent via WebSocket (agent runs WS server).
+ * Mints reCAPTCHA and runs Flow's batchexecute RPCs inside the Flow tab.
+ *
+ * Flow moved to flow.google.com in September 2026 and stopped minting the
+ * `Bearer ya29.…` the old REST host needed. The current path is `batch_rpc`:
+ * the agent builds an `f.req` envelope, this worker mints a captcha for it and
+ * runs the POST in the page's MAIN world, where the `at` CSRF token lives.
+ * The bearer capture and the `api_request` / `trpc_request` proxies below are
+ * the pre-migration path. The agent no longer sends either — it speaks only
+ * `batch_rpc`. They stay so an extension updated ahead of its agent keeps
+ * serving an older one; remove them once no agent in the wild sends them.
+ */
 
+const AGENT_WS_URL = 'ws://127.0.0.1:9222';
+// NOTE: This is a browser-restricted public API key — safe to ship in extension bundles.
+const API_KEY = 'AIzaSyBtrm0o5ab1c-Ec8ZuLcGt3oJAA5VWt3pY';
+
+// labs.google/fx/tools/flow still resolves but redirects here, so in practice a
+// signed-in tab is only ever flow.google.com/*. The legacy patterns stay for an
+// old pinned tab. Every tab lookup in this file goes through this list.
 const flowUrls = [
   'https://flow.google.com/*',
   'https://labs.google/fx/tools/flow*',
@@ -9,14 +28,46 @@ const flowUrls = [
 ];
 const FLOW_TAB_URL = 'https://flow.google.com/';
 
+// ─── Temporary Netlog Recorder (docs/CAPTURE.md) ───────────
+const NETLOG_HOSTS = ['https://flow.google.com/_/*'];
+const netlogPending = new Map();
+
+chrome.webRequest.onBeforeRequest.addListener(
+  (d) => {
+    let body = null;
+    if (d.requestBody?.raw?.length) {
+      body = new TextDecoder().decode(new Uint8Array(d.requestBody.raw[0].bytes));
+    } else if (d.requestBody?.formData) {
+      body = JSON.stringify(d.requestBody.formData);
+    }
+    netlogPending.set(d.requestId, { ts: new Date().toISOString(), url: d.url, method: d.method, body });
+  },
+  { urls: NETLOG_HOSTS },
+  ['requestBody']
+);
+
+chrome.webRequest.onCompleted.addListener(
+  (d) => {
+    const rec = netlogPending.get(d.requestId);
+    if (!rec) return;
+    netlogPending.delete(d.requestId);
+    fetch('http://127.0.0.1:8100/api/ext/netlog', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...rec, statusCode: d.statusCode }),
+    }).catch(() => {});
+  },
+  { urls: NETLOG_HOSTS }
+);
+
 let ws = null;
 let flowKey = null;
-let callbackSecret = null;
-let state = 'off';
+let callbackSecret = null;  // Auth secret for HTTP callback, received from server on WS connect
+let state = 'off'; // off | idle | running
 let manualDisconnect = false;
 let metrics = {
   tokenCapturedAt: null,
-  requestCount: 0,
+  requestCount: 0,   // captcha-consuming requests only (gen image/video/upscale)
   successCount: 0,
   failedCount: 0,
   lastError: null,
@@ -25,24 +76,7 @@ let metrics = {
 // ─── URL → Log Type Classifier ─────────────────────────────
 
 // Visible log types — only these appear in the request log
-const _VISIBLE_TYPES = new Set([
-  'GEN_IMG', 'GEN_VID', 'GEN_VID_REF', 'UPLOAD', 'FETCH_BLOB',
-  'UPSCALE', 'CREATE_PROJECT', 'RENAME', 'RENAME_ASSET', 'RENAME_PROJECT',
-  'TRACKING', 'URL_REFRESH'
-]);
-
-function _classifyRpc(rpcid) {
-  if (rpcid === 'ogiZ0b') return 'GEN_IMG';
-  if (rpcid === 'eb1hJf') return 'GEN_VID';
-  if (rpcid === 'maseQ')  return 'UPLOAD';
-  if (rpcid === 'mYWVGd') return 'RENAME';
-  if (rpcid === 'jHPbke') return 'CREATE_PROJECT';
-  if (rpcid === 'o8DA4')  return 'RENAME_PROJECT';
-  if (rpcid === 'wXbhsf') return 'POLL';
-  if (rpcid === 'kFhKBc') return 'MEDIA';
-  if (rpcid === 'vv2eKe') return 'LIST_MEDIA';
-  return `RPC:${rpcid}`;
-}
+const _VISIBLE_TYPES = new Set(['GEN_IMG', 'GEN_VID', 'GEN_VID_REF', 'UPSCALE', 'TRACKING', 'URL_REFRESH']);
 
 function _classifyApiUrl(url) {
   if (url.includes('uploadImage'))                     return 'UPLOAD';
@@ -54,7 +88,6 @@ function _classifyApiUrl(url) {
   if (url.includes('upsampleImage'))                   return 'UPS_IMG';
   if (url.includes('/media/'))                         return 'MEDIA';
   if (url.includes('/credits'))                        return 'CREDITS';
-  if (url.includes('fetch_blob'))                      return 'FETCH_BLOB';
   return 'API';
 }
 
@@ -78,6 +111,8 @@ function broadcastRequestLog() {
   chrome.runtime.sendMessage({ type: 'REQUEST_LOG_UPDATE', log: requestLog }).catch(() => {});
 }
 
+// ─── Startup ────────────────────────────────────────────────
+
 let initializationPromise = null;
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -91,7 +126,9 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === 'reconnect') connectToAgent();
   if (alarm.name === 'keepAlive') keepAlive();
   if (alarm.name === 'token-refresh') {
-    await captureTokenFromFlowTab();
+    // Passive maintenance must never create browser tabs. If the user has no
+    // Flow tab open, wait for an explicit action or an actual RPC to open one.
+    await captureTokenFromFlowTab({ createIfMissing: false });
   }
 });
 
@@ -144,7 +181,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
       ws.send(JSON.stringify({ type: 'token_captured', flowKey }));
     }
   },
-  { urls: ['<all_urls>'] },
+  { urls: ['https://aisandbox-pa.googleapis.com/*', 'https://labs.google/*'] },
   ['requestHeaders', 'extraHeaders'],
 );
 
@@ -168,29 +205,29 @@ if (chrome.webRequest?.onBeforeRequest) {
 
 let _openingFlowTab = false;
 
-async function captureTokenFromFlowTab() {
-  const tabs = await chrome.tabs.query({
-    url: ['https://flow.google.com/*', 'https://labs.google/fx/tools/flow*', 'https://labs.google/fx/*', 'https://labs.google/*'],
-  });
+async function captureTokenFromFlowTab({ createIfMissing = false } = {}) {
+  let tabs = await chrome.tabs.query({ url: flowUrls });
   if (!tabs.length) {
+    if (!createIfMissing) {
+      console.log('[FlowAgent] No Flow tab found — passive refresh skipped');
+      return { skipped: 'NO_FLOW_TAB' };
+    }
     if (_openingFlowTab) {
       console.log('[FlowAgent] Flow tab already opening, skipping');
       return;
     }
     _openingFlowTab = true;
     try {
-      console.log('[FlowAgent] No Flow tab found — opening one in background');
-      await chrome.tabs.create({ url: 'https://flow.google.com/', active: false });
+      console.log('[FlowAgent] No Flow tab found — opening one for explicit refresh');
+      const opened = await chrome.tabs.create({ url: FLOW_TAB_URL, active: false });
       await sleep(3000);
-      const retryTabs = await chrome.tabs.query({
-        url: ['https://flow.google.com/*', 'https://labs.google/fx/tools/flow*', 'https://labs.google/fx/*', 'https://labs.google/*'],
-      });
-      if (!retryTabs.length) {
+      const target = opened?.id ? await chrome.tabs.get(opened.id).catch(() => null) : null;
+      if (!target) {
         console.log('[FlowAgent] Flow tab not ready yet after open');
         return;
       }
       await chrome.scripting.executeScript({
-        target: { tabId: retryTabs[0].id },
+        target: { tabId: target.id },
         files: ['content.js'],
       });
       console.log('[FlowAgent] Token refresh triggered on newly opened Flow tab');
@@ -212,6 +249,48 @@ async function captureTokenFromFlowTab() {
   }
 }
 
+async function openProjectTab(projectId) {
+  if (!projectId) return { error: 'MISSING_PROJECT_ID' };
+  const cleanId = String(projectId).trim();
+  const targetUrl = `https://flow.google.com/project/${cleanId}`;
+  const tabs = await chrome.tabs.query({ url: flowUrls });
+
+  // 1. Try to find a tab already at this exact project
+  let matchTab = tabs.find((t) => t.url && t.url.includes(cleanId));
+  if (matchTab) {
+    await chrome.tabs.update(matchTab.id, { active: true });
+    if (matchTab.windowId) {
+      try { await chrome.windows.update(matchTab.windowId, { focused: true }); } catch {}
+    }
+    return { ok: true, tabId: matchTab.id, action: 'activated' };
+  }
+
+  // 2. If there is a tab at flow.google.com (home or explore), navigate it to the project
+  let homeTab = tabs.find((t) => {
+    try {
+      const u = new URL(t.url);
+      return u.hostname === 'flow.google.com' && (u.pathname === '/' || u.pathname === '' || u.pathname === '/explore');
+    } catch {
+      return false;
+    }
+  });
+
+  if (homeTab) {
+    await chrome.tabs.update(homeTab.id, { url: targetUrl, active: true });
+    if (homeTab.windowId) {
+      try { await chrome.windows.update(homeTab.windowId, { focused: true }); } catch {}
+    }
+    return { ok: true, tabId: homeTab.id, action: 'navigated' };
+  }
+
+  // 3. Otherwise create a new tab and focus window
+  const newTab = await chrome.tabs.create({ url: targetUrl, active: true });
+  if (newTab.windowId) {
+    try { await chrome.windows.update(newTab.windowId, { focused: true }); } catch {}
+  }
+  return { ok: true, tabId: newTab.id, action: 'opened' };
+}
+
 // ─── WebSocket to Agent ─────────────────────────────────────
 
 function connectToAgent() {
@@ -227,29 +306,10 @@ function connectToAgent() {
     return;
   }
 
-let _heartbeatTimer = null;
-function startWsHeartbeat() {
-  if (_heartbeatTimer) clearInterval(_heartbeatTimer);
-  _heartbeatTimer = setInterval(() => {
-    if (ws?.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'ping' }));
-    }
-  }, 10000);
-}
-
-if (chrome.runtime?.onConnect) {
-  chrome.runtime.onConnect.addListener((port) => {
-    if (port.name === 'FLOW_KEEPALIVE') {
-      port.onDisconnect.addListener(() => {});
-    }
-  });
-}
-
   ws.onopen = () => {
     console.log('[FlowAgent] Connected to agent');
     chrome.alarms.clear('reconnect');
     setState('idle');
-    startWsHeartbeat();
 
     // Token refresh alarm — 45 min gives buffer before ~60 min expiry
     chrome.alarms.create('token-refresh', { periodInMinutes: 45 });
@@ -258,6 +318,8 @@ if (chrome.runtime?.onConnect) {
     ws.send(JSON.stringify({
       type: 'extension_ready',
       flowKeyPresent: !!flowKey,
+      extensionVersion: chrome.runtime.getManifest().version,
+      flowUrlSupported: chrome.runtime.getManifest().host_permissions?.includes('https://flow.google.com/*') === true,
       tokenAge: flowKey && metrics.tokenCapturedAt ? Date.now() - metrics.tokenCapturedAt : null,
     }));
     if (flowKey) {
@@ -277,188 +339,239 @@ if (chrome.runtime?.onConnect) {
         await handleTrpcRequest(msg);
       } else if (msg.method === 'solve_captcha') {
         await handleSolveCaptcha(msg);
-      } else if (msg.method === 'reload_extension') {
-        sendToAgent({ id: msg.id, result: { reloading: true } });
-        setTimeout(() => chrome.runtime.reload(), 100);
-      } else if (msg.method === 'navigate_tab') {
-        const { tabId, url } = msg.params || {};
+      } else if (msg.method === 'reload_extension' || msg.type === 'reload_extension') {
+        chrome.runtime.reload();
+      } else if (msg.method === 'reload_flow_tab') {
+        const tabs = await chrome.tabs.query({ url: flowUrls });
+        for (const t of tabs) {
+          try { await chrome.tabs.reload(t.id); } catch {}
+        }
+        sendToAgent({ id: msg.id, result: { reloaded: tabs.length } });
+      } else if (msg.method === 'list_tabs') {
+        const tabs = await chrome.tabs.query({ url: flowUrls });
+        const list = tabs.map((t) => ({
+          id: t.id,
+          url: t.url,
+          active: t.active,
+          discarded: t.discarded,
+          title: t.title,
+        }));
+        sendToAgent({ id: msg.id, result: { tabs: list } });
+      } else if (msg.method === 'open_project_tab') {
+        const res = await openProjectTab(msg.params?.projectId);
+        sendToAgent({ id: msg.id, result: res });
+      } else if (msg.method === 'submit_ui_prompt') {
+        const tabs = await chrome.tabs.query({ url: flowUrls });
+        let candidate = tabs.find((t) => t.active && !t.discarded) || tabs[0];
+        if (!candidate) {
+          sendToAgent({ id: msg.id, result: { error: 'NO_FLOW_TAB' } });
+          return;
+        }
         try {
-          let target = tabId;
-          if (!target) {
-            const act = await chrome.tabs.query({ active: true, currentWindow: true });
-            target = act[0]?.id;
-          }
-          if (target && url) {
-            const shouldActivate = msg.params?.active === true;
-            await chrome.tabs.update(target, { url, ...(shouldActivate ? { active: true } : {}) });
-            sendToAgent({ id: msg.id, result: { updated: true, tabId: target, url } });
-          } else {
-            sendToAgent({ id: msg.id, error: 'NO_TARGET_OR_URL' });
-          }
+          const [injected] = await chrome.scripting.executeScript({
+            target: { tabId: candidate.id },
+            world: 'MAIN',
+            args: [msg.params?.prompt || ''],
+            func: async (promptText) => {
+              const editor = document.querySelector('.ProseMirror');
+              if (!editor) return { error: 'NO_PROSEMIRROR' };
+              editor.focus();
+              document.execCommand('selectAll', false, null);
+              document.execCommand('insertText', false, promptText);
+              editor.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: promptText }));
+              editor.dispatchEvent(new Event('input', { bubbles: true }));
+              editor.dispatchEvent(new Event('change', { bubbles: true }));
+
+              await new Promise(r => setTimeout(r, 600));
+              const buttons = Array.from(document.querySelectorAll('button'));
+              const btn = buttons.find(b => b.getAttribute('aria-label') === 'Bắt đầu tạo' || b.innerText?.includes('arrow_forward'));
+              const disabled = btn?.disabled || btn?.getAttribute('disabled') !== null || btn?.getAttribute('aria-disabled') === 'true';
+
+              if (btn && !disabled) {
+                btn.focus();
+                try { btn.click(); } catch (_) {}
+                ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'].forEach(type => {
+                  btn.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window, button: 0, buttons: 1 }));
+                });
+              }
+
+              ['keydown', 'keypress', 'keyup'].forEach(type => {
+                editor.dispatchEvent(new KeyboardEvent(type, {
+                  key: 'Enter',
+                  code: 'Enter',
+                  keyCode: 13,
+                  which: 13,
+                  bubbles: true,
+                  cancelable: true,
+                }));
+              });
+
+              return { success: true, btnFound: !!btn, btnDisabled: disabled, prompt: promptText.slice(0, 80) };
+            },
+          });
+          sendToAgent({ id: msg.id, result: injected?.result });
         } catch (e) {
-          sendToAgent({ id: msg.id, error: e.message });
+          sendToAgent({ id: msg.id, result: { error: e.message } });
+        }
+      } else if (msg.method === 'debug_tab') {
+        const tabs = await chrome.tabs.query({ url: flowUrls });
+        let candidate =
+          tabs.find((t) => t.active && !t.discarded) ||
+          tabs.find((t) => t.url && t.url.includes('/edit/') && !t.discarded) ||
+          tabs.find((t) => !t.discarded) ||
+          tabs[0];
+        if (!candidate) {
+          sendToAgent({ id: msg.id, result: { error: 'NO_FLOW_TAB' } });
+          return;
+        }
+        try {
+          const [injected] = await chrome.scripting.executeScript({
+            target: { tabId: candidate.id },
+            world: 'MAIN',
+            func: () => {
+              const wiz = globalThis.WIZ_global_data || {};
+              return {
+                url: location.href,
+                hasAt: !!wiz.SNlM0e,
+                atLen: (wiz.SNlM0e || '').length,
+                sid: wiz.FdrFJe,
+                bl: wiz.cfb2h,
+                hasGrecaptcha: !!window.grecaptcha?.enterprise?.execute,
+                executeString: window.grecaptcha?.enterprise?.execute?.toString(),
+                hasHijack: !!window.__fk_hijack,
+                hijackPristine: typeof window.__fk_hijack?.pristine,
+                hijackTrapped: !!window.__fk_hijack?.trapped,
+                hijackSource: window.__fk_hijack?.source,
+                grecaptchaClients: Object.keys(window.___grecaptcha_cfg?.clients || {}),
+                promptElements: Array.from(document.querySelectorAll('textarea, [contenteditable="true"], [role="textbox"]'))
+                  .map(el => ({ tag: el.tagName, id: el.id, className: el.className, placeholder: el.placeholder || el.getAttribute('aria-label') || el.getAttribute('placeholder') })),
+                editorContent: document.querySelector('.ProseMirror')?.innerText || '',
+                buttons: Array.from(document.querySelectorAll('button'))
+                  .map(b => ({ id: b.id, text: b.innerText?.trim()?.slice(0, 30), ariaLabel: b.getAttribute('aria-label') }))
+                  .filter(b => b.text || b.ariaLabel)
+                  .slice(-15),
+                chatMessages: Array.from(document.querySelectorAll('p, [role="log"], [class*="message"], [class*="prompt"], [class*="response"]'))
+                  .map(el => el.innerText?.trim())
+                  .filter(t => t && t.length > 10 && t.length < 500)
+                  .slice(-8),
+                flowImages: Array.from(document.querySelectorAll('img'))
+                  .map(img => ({ src: img.src, alt: img.alt }))
+                  .filter(img => img.src && (img.src.includes('flow-content') || img.src.includes('googleusercontent') || img.src.includes('image/')))
+                  .slice(-8),
+                scripts: Array.from(document.querySelectorAll('script')).map(s => s.src).filter(s => s.includes('recaptcha') || s.includes('flow')),
+              };
+            },
+          });
+          sendToAgent({ id: msg.id, result: { tabId: candidate.id, data: injected?.result } });
+        } catch (e) {
+          sendToAgent({ id: msg.id, result: { tabId: candidate.id, error: e.message } });
+        }
+      } else if (msg.method === 'eval_tab') {
+        const tabs = await chrome.tabs.query({ url: flowUrls });
+        let candidate = tabs.find((t) => t.active && !t.discarded) || tabs[0];
+        if (!candidate) {
+          sendToAgent({ id: msg.id, result: { error: 'NO_FLOW_TAB' } });
+          return;
+        }
+        try {
+          const [injected] = await chrome.scripting.executeScript({
+            target: { tabId: candidate.id },
+            world: 'MAIN',
+            args: [msg.params?.code || ''],
+            func: (codeStr) => {
+              try {
+                return { result: eval(codeStr) };
+              } catch (e) {
+                return { error: e.message, stack: e.stack };
+              }
+            },
+          });
+          sendToAgent({ id: msg.id, result: injected?.result });
+        } catch (e) {
+          sendToAgent({ id: msg.id, result: { error: e.message } });
+        }
+      } else if (msg.method === 'find_actions') {
+        const tabs = await chrome.tabs.query({ url: flowUrls });
+        let candidate = tabs.find((t) => t.active && !t.discarded) || tabs[0];
+        if (!candidate) {
+          sendToAgent({ id: msg.id, result: { error: 'NO_FLOW_TAB' } });
+          return;
+        }
+        try {
+          const [injected] = await chrome.scripting.executeScript({
+            target: { tabId: candidate.id },
+            world: 'MAIN',
+            func: async () => {
+              const scriptTags = Array.from(document.querySelectorAll('script')).map((s) => s.src).filter(Boolean);
+              const perfEntries = performance.getEntriesByType('resource')
+                .map(r => r.name)
+                .filter(u => u.includes('.js') || u.includes('/js/'));
+              const allScripts = Array.from(new Set([...scriptTags, ...perfEntries]));
+              const matches = [];
+              const scanned = [];
+              for (const src of allScripts) {
+                if (src.includes('recaptcha')) continue;
+                try {
+                  scanned.push(src);
+                  const resp = await fetch(src);
+                  const text = await resp.text();
+                  const re = /action:\s*['"]([A-Z0-9_]{3,40})['"]/g;
+                  let m;
+                  while ((m = re.exec(text)) !== null) {
+                    matches.push({ src: src.slice(-50), action: m[1] });
+                  }
+                  const re2 = /\.execute\([^,]+,\s*\{\s*action:\s*['"]([^'"]+)['"]/g;
+                  while ((m = re2.exec(text)) !== null) {
+                    matches.push({ src: src.slice(-50), executeAction: m[1] });
+                  }
+                } catch (e) {}
+              }
+              return { matches, scriptCount: allScripts.length, scannedCount: scanned.length, scannedSample: scanned.slice(0, 10) };
+            },
+          });
+          sendToAgent({ id: msg.id, result: injected?.result });
+        } catch (e) {
+          sendToAgent({ id: msg.id, result: { error: e.message } });
+        }
+      } else if (msg.method === 'get_captured_video_urls') {
+        sendToAgent({ id: msg.id, result: _latestVideoUrls });
+      } else if (msg.method === 'exec_tab') {
+        const tabs = await chrome.tabs.query({ url: flowUrls });
+        let candidate = tabs.find((t) => t.active && !t.discarded) || tabs[0];
+        if (!candidate) {
+          sendToAgent({ id: msg.id, result: { error: 'NO_FLOW_TAB' } });
+          return;
+        }
+        try {
+          const [injected] = await chrome.scripting.executeScript({
+            target: { tabId: msg.params?.tabId || candidate.id },
+            world: 'MAIN',
+            func: (codeStr) => {
+              try { return { result: eval(codeStr) }; } catch (e) { return { error: e.message }; }
+            },
+            args: [msg.params?.code || ''],
+          });
+          sendToAgent({ id: msg.id, result: injected?.result });
+        } catch (e) {
+          sendToAgent({ id: msg.id, result: { error: e.message } });
         }
       } else if (msg.method === 'get_status') {
-        const allTabs = await chrome.tabs.query({});
-        const localData = await chrome.storage.local.get(null);
-        if (!flowKey && localData?.flowKey) {
-          flowKey = localData.flowKey;
-          if (ws?.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: 'token_captured', flowKey }));
-          }
-        }
         sendToAgent({
           id: msg.id,
           result: {
             state,
             flowKeyPresent: !!flowKey,
-            storageKeys: Object.keys(localData || {}),
             manualDisconnect,
             tokenAge: metrics.tokenCapturedAt ? Date.now() - metrics.tokenCapturedAt : null,
             metrics,
-            tabs: allTabs.map(t => ({ id: t.id, url: t.url, active: t.active, title: t.title })),
           },
         });
-      } else if (msg.method === 'fetch_blob') {
-        const { url } = msg.params || {};
-        if (url) {
-          addRequestLog({
-            id: msg.id,
-            type: 'FETCH_BLOB',
-            time: new Date().toISOString(),
-            status: 'processing',
-            url: url.slice(0, 100),
-            payloadSummary: 'Tải media blob',
-          });
-        }
-        try {
-          const fetchHeaders = {};
-          if (flowKey) fetchHeaders['authorization'] = `Bearer ${flowKey}`;
-          const resp = await fetch(url, { headers: fetchHeaders, credentials: 'include' });
-          if (!resp.ok) {
-            updateRequestLog(msg.id, { status: 'failed', error: `HTTP_${resp.status}` });
-            sendToAgent({ id: msg.id, status: resp.status, error: `HTTP_${resp.status}` });
-          } else {
-            const buffer = await resp.arrayBuffer();
-            let binary = '';
-            const bytes = new Uint8Array(buffer);
-            const len = bytes.byteLength;
-            const chunkSize = 8192;
-            for (let i = 0; i < len; i += chunkSize) {
-              binary += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + chunkSize, len)));
-            }
-            const base64Data = btoa(binary);
-            updateRequestLog(msg.id, { status: 'success', responseSummary: `${len} bytes` });
-            sendToAgent({ id: msg.id, status: 200, size: len, data: base64Data });
-          }
-        } catch (e) {
-          updateRequestLog(msg.id, { status: 'failed', error: e.message });
-          sendToAgent({ id: msg.id, status: 500, error: e.message });
-        }
-      } else if (msg.method === 'get_captured_video_urls') {
-        sendToAgent({ id: msg.id, result: _latestVideoUrls });
-      } else if (msg.method === 'exec_tab') {
-        const { tabId, code } = msg.params || {};
-        try {
-          let target = tabId;
-          if (!target) {
-            const tabs = await chrome.tabs.query({ url: flowUrls });
-            target = tabs[0]?.id;
-          }
-          if (!target) {
-            sendToAgent({ id: msg.id, error: 'NO_TARGET_TAB' });
-          } else if (code === 'reload') {
-            await chrome.tabs.reload(target);
-            sendToAgent({ id: msg.id, result: { success: true, reloaded: true, tabId: target } });
-          } else if (code && (code.startsWith('http://') || code.startsWith('https://') || code.startsWith('nav:'))) {
-            const destUrl = code.startsWith('nav:') ? code.slice(4).trim() : code.trim();
-            await chrome.tabs.update(target, { url: destUrl });
-            sendToAgent({ id: msg.id, result: { success: true, navigated: true, tabId: target, url: destUrl } });
-          } else if (code && code.startsWith('js:')) {
-            const rawJs = code.slice(3);
-            const results = await chrome.scripting.executeScript({
-              target: { tabId: target },
-              func: (expr) => {
-                try {
-                  const res = eval(expr);
-                  return { success: true, result: res };
-                } catch (err) {
-                  return { success: false, error: err.message };
-                }
-              },
-              args: [rawJs],
-            });
-            sendToAgent({ id: msg.id, result: results[0]?.result });
-          } else {
-            const results = await chrome.scripting.executeScript({
-              target: { tabId: target },
-              func: () => ({
-                success: true,
-                title: document.title,
-                location: window.location.href,
-                imgCount: document.querySelectorAll('img').length,
-                vidCount: document.querySelectorAll('video').length,
-              }),
-            });
-            sendToAgent({ id: msg.id, result: results[0]?.result });
-          }
-        } catch (e) {
-          sendToAgent({ id: msg.id, error: e.message });
-        }
       } else if (msg.type === 'callback_secret') {
         callbackSecret = msg.secret;
         chrome.storage.local.set({ callbackSecret: msg.secret });
         console.log('[FlowAgent] Received callback secret');
       } else if (msg.type === 'pong') {
         // keepalive response
-      } else if (msg.type === 'ping') {
-        if (ws?.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: 'pong' }));
-        }
-      } else if (msg.type === 'reload_extension' || msg.method === 'reload_extension') {
-        console.log('[FlowAgent] Reloading flow tabs and extension on agent command');
-        try {
-          const flowTabs = await chrome.tabs.query({ url: ['https://flow.google.com/*', 'https://labs.google/*'] });
-          for (const t of flowTabs) {
-            if (t.id) chrome.tabs.reload(t.id);
-          }
-        } catch {}
-        setTimeout(() => chrome.runtime.reload(), 500);
-      } else if (msg.type === 'update_request_log') {
-        let updated = false;
-        if (msg.id) {
-          const entry = requestLog.find((e) => e.id === msg.id);
-          if (entry) {
-            if (msg.status) entry.status = msg.status;
-            if (msg.outputUrl) entry.outputUrl = msg.outputUrl;
-            updated = true;
-          }
-        }
-        if (!updated && msg.mediaId) {
-          const entry = requestLog.find(
-            (e) =>
-              (e.payloadSummary && e.payloadSummary.includes(msg.mediaId)) ||
-              (e.responseSummary && e.responseSummary.includes(msg.mediaId)),
-          );
-          if (entry) {
-            if (msg.status) entry.status = msg.status;
-            if (msg.outputUrl) entry.outputUrl = msg.outputUrl;
-            updated = true;
-          }
-        }
-        if (!updated) {
-          const vidEntry = requestLog.find(
-            (e) =>
-              ['GEN_VID', 'GEN_VID_REF', 'UPSCALE'].includes(e.type) &&
-              (!e.outputUrl || e.status !== 'COMPLETED'),
-          );
-          if (vidEntry) {
-            if (msg.status) vidEntry.status = msg.status;
-            if (msg.outputUrl) vidEntry.outputUrl = msg.outputUrl;
-            updated = true;
-          }
-        }
-        if (updated) broadcastRequestLog();
       }
     } catch (e) {
       console.error('[FlowAgent] Message error:', e);
@@ -467,10 +580,6 @@ if (chrome.runtime?.onConnect) {
 
   ws.onclose = () => {
     setState('off');
-    if (_heartbeatTimer) {
-      clearInterval(_heartbeatTimer);
-      _heartbeatTimer = null;
-    }
     chrome.alarms.clear('token-refresh');
     if (!manualDisconnect) scheduleReconnect();
   };
@@ -495,15 +604,25 @@ function keepAlive() {
 }
 
 function sendToAgent(msg) {
-  if (ws?.readyState === WebSocket.OPEN) {
-    try { ws.send(JSON.stringify(msg)); } catch (e) {}
-  }
+  // API responses (with msg.id) go via HTTP — immune to WS disconnect
   if (msg.id) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (callbackSecret) {
+      headers['X-Callback-Secret'] = callbackSecret;
+    }
     fetch('http://127.0.0.1:8100/api/ext/callback', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(msg),
-    }).catch(() => {});
+    }).catch(() => {
+      // HTTP failed — fallback to WS
+      if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+    });
+    return;
+  }
+  // Non-response messages (ping, status) or no secret yet — use WS
+  if (ws?.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(msg));
   }
 }
 
@@ -511,117 +630,45 @@ function sendToAgent(msg) {
 
 async function requestCaptchaFromTab(tabId, requestId, pageAction) {
   try {
-    const tab = await chrome.tabs.get(tabId);
-    if (!tab || !tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://')) {
-      return { error: 'INVALID_TAB_URL' };
-    }
-  } catch (e) {}
-
-  // 1. Direct MAIN world execution (fastest and most reliable)
-  try {
-    const results = await chrome.scripting.executeScript({
-      target: { tabId },
-      world: 'MAIN',
-      func: async (siteKey, action) => {
-        const getGre = () => window.grecaptcha?.enterprise || window.grecaptcha;
-        let gre = getGre();
-        if (!gre) {
-          // Wait briefly if tab is still completing initialization
-          for (let i = 0; i < 6; i++) {
-            await new Promise((r) => setTimeout(r, 500));
-            gre = getGre();
-            if (gre) break;
-          }
-        }
-        if (!gre) return { error: 'NO_GRECAPTCHA' };
-        return await new Promise((resolve) => {
-          const timer = setTimeout(() => resolve({ error: 'EXECUTE_TIMEOUT' }), 12000);
-          const execute = () => {
-            try {
-              if (gre.execute) {
-                gre.execute(siteKey, { action })
-                  .then(tok => { clearTimeout(timer); resolve({ token: tok }); })
-                  .catch(err => { clearTimeout(timer); resolve({ error: err?.message || 'EXEC_REJECT' }); });
-              } else {
-                clearTimeout(timer);
-                resolve({ error: 'NO_EXECUTE_FN' });
-              }
-            } catch (e) {
-              clearTimeout(timer);
-              resolve({ error: e?.message || 'EXEC_FAIL' });
-            }
-          };
-
-          if (gre.ready) {
-            gre.ready(execute);
-          } else {
-            execute();
-          }
-        });
-      },
-      args: [RECAPTCHA_SITE_KEY, pageAction],
+    return await chrome.tabs.sendMessage(tabId, {
+      type: 'GET_CAPTCHA',
+      requestId,
+      pageAction,
     });
+  } catch (error) {
+    const msg = error?.message || '';
+    const shouldInject =
+      msg.includes('Receiving end does not exist') ||
+      msg.includes('Could not establish connection');
+    if (!shouldInject) throw error;
 
-    const res = results[0]?.result;
-    if (res?.token) return res;
-    console.warn('[FlowAgent] Direct MAIN world captcha result:', res);
-  } catch (e) {
-    console.warn('[FlowAgent] Direct MAIN world captcha exception:', e);
+    // Inject content script and retry
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ['content.js'],
+    });
+    await sleep(200);
+    return await chrome.tabs.sendMessage(tabId, {
+      type: 'GET_CAPTCHA',
+      requestId,
+      pageAction,
+    });
   }
-
-  // 2. Fallback: message bridge to content script
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const resp = await chrome.tabs.sendMessage(tabId, {
-        type: 'GET_CAPTCHA',
-        requestId,
-        pageAction,
-      });
-      if (resp) {
-        if (resp.token) return resp;
-        if (resp.error && resp.error !== 'CONTENT_TIMEOUT') {
-          console.warn(`[FlowAgent] Tab returned captcha error: ${resp.error}`);
-          return resp;
-        }
-      }
-    } catch (error) {
-      const msg = error?.message || '';
-      const shouldInject =
-        msg.includes('Receiving end does not exist') ||
-        msg.includes('Could not establish connection');
-      if (shouldInject && attempt === 0) {
-        try {
-          await chrome.scripting.executeScript({
-            target: { tabId },
-            files: ['content.js'],
-          });
-          await chrome.scripting.executeScript({
-            target: { tabId },
-            files: ['injected.js'],
-            world: 'MAIN',
-          });
-        } catch (e) {}
-      }
-      await sleep(1000);
-    }
-  }
-  return { error: 'NO_CAPTCHA_LISTENER' };
 }
 
-
-
+/** Try to wake a discarded Flow tab so `sendMessage` can reach it.
+ *  Chrome auto-discards backgrounded tabs to save memory; the tab still shows
+ *  up in `chrome.tabs.query` but cross-context calls fail with "No current
+ *  window" / "No tab with id". A reload re-hydrates it. */
 async function reviveTabIfNeeded(tab) {
-  if (!tab) return null;
-  if (tab.discarded) {
-    try {
-      await chrome.tabs.reload(tab.id);
-      await sleep(3000);
-      return await chrome.tabs.get(tab.id);
-    } catch (e) {
-      return null;
-    }
+  if (!tab?.discarded) return tab;
+  try {
+    await chrome.tabs.reload(tab.id);
+    await sleep(2500);
+    return await chrome.tabs.get(tab.id);
+  } catch {
+    return null;
   }
-  return tab;
 }
 
 function captchaFromTab(tabId, requestId, captchaAction) {
@@ -634,21 +681,24 @@ function captchaFromTab(tabId, requestId, captchaAction) {
 async function solveCaptcha(requestId, captchaAction) {
   let tabs = await chrome.tabs.query({ url: flowUrls });
 
-  // No Flow tab at all — spawn one and let it settle.
+  // No Flow tab at all — spawn one and let it settle. Keep the exact tab id:
+  // a redirected or stale tab must not make us select some older candidate.
   if (!tabs.length) {
+    let opened;
     try {
-      await chrome.tabs.create({ url: FLOW_TAB_URL, active: false });
+      opened = await chrome.tabs.create({ url: FLOW_TAB_URL, active: false });
       await sleep(3000);
-      tabs = await chrome.tabs.query({ url: flowUrls });
     } catch (e) {
       return { error: e.message || 'NO_FLOW_TAB' };
     }
-    if (!tabs.length) return { error: 'NO_FLOW_TAB' };
+    const target = opened?.id ? await chrome.tabs.get(opened.id).catch(() => null) : null;
+    if (!target) return { error: 'NO_FLOW_TAB' };
+    tabs = [target];
   }
 
   // Try each Flow tab in turn. A tab that answers "no grecaptcha" is a tab
-  // sitting on a page that never loaded it — another Flow tab may well be
-  // fine. Returning on the first one let one stale tab veto every generation.
+  // Try project tabs first (they have the full toolchain and recaptcha context loaded)
+  tabs.sort((a, b) => ((b.url && b.url.includes('/project/')) ? 1 : 0) - ((a.url && a.url.includes('/project/')) ? 1 : 0));
   const errors = [];
   for (const candidate of tabs) {
     const tab = await reviveTabIfNeeded(candidate);
@@ -676,16 +726,25 @@ async function solveCaptcha(requestId, captchaAction) {
     }
   }
 
-  // Every candidate failed — last-ditch, spawn a fresh tab and try it once.
+  // Every candidate failed — last-ditch, spawn a fresh temporary tab and
+  // target THAT exact tab. Previously we re-queried all Flow tabs and picked
+  // fresh[0], which could select the same stale tab again while leaking the
+  // newly-created one on every retry.
+  let recoveryTab = null;
   try {
-    await chrome.tabs.create({ url: FLOW_TAB_URL, active: false });
+    recoveryTab = await chrome.tabs.create({ url: FLOW_TAB_URL, active: false });
     await sleep(3000);
-    const fresh = await chrome.tabs.query({ url: flowUrls });
-    const target = fresh.find((t) => !t.discarded) || fresh[0];
-    if (!target) return { error: 'NO_FLOW_TAB' };
+    const target = await chrome.tabs.get(recoveryTab.id);
+    if (!target || target.discarded) return { error: 'NO_FLOW_TAB' };
     return await captchaFromTab(target.id, requestId, captchaAction);
   } catch (e) {
     return { error: e?.message || errors[0] || 'NO_FLOW_TAB' };
+  } finally {
+    // A recovery tab is disposable: there were already Flow tabs available
+    // for the signed RPC. Do not let CAPTCHA retries accumulate root tabs.
+    if (recoveryTab?.id) {
+      try { await chrome.tabs.remove(recoveryTab.id); } catch { /* already gone */ }
+    }
   }
 }
 
@@ -719,15 +778,20 @@ const MAX_RPC_TEXT = 32000000; // the project listing alone is past 17 MB
 
 async function runBatchRpc(cmd) {
   const tabs = await chrome.tabs.query({ url: flowUrls });
-  let candidate = tabs.find((t) => !t.discarded) || tabs[0];
+  let candidate =
+    tabs.find((t) => t.url && t.url.includes('/project/') && !t.discarded) ||
+    tabs.find((t) => t.active && !t.discarded) ||
+    tabs.find((t) => !t.discarded) ||
+    tabs[0];
   if (!candidate) {
     // No Flow tab — open one and give the app a moment to boot, otherwise
-    // WIZ_global_data is not on the page yet and `at` comes back empty.
+    // WIZ_global_data is not on the page yet and `at` comes back empty. Keep
+    // the exact created tab id so redirects/stale tabs cannot hijack recovery.
+    let opened;
     try {
-      await chrome.tabs.create({ url: FLOW_TAB_URL, active: false });
+      opened = await chrome.tabs.create({ url: FLOW_TAB_URL, active: false });
       await sleep(5000);
-      const fresh = await chrome.tabs.query({ url: flowUrls });
-      candidate = fresh.find((t) => !t.discarded) || fresh[0];
+      candidate = opened?.id ? await chrome.tabs.get(opened.id).catch(() => null) : null;
     } catch (e) {
       return { error: e?.message || 'NO_FLOW_TAB' };
     }
@@ -739,95 +803,129 @@ async function runBatchRpc(cmd) {
 
   let freq = cmd.freq;
   if (cmd.captchaAction) {
-    const solved = await solveCaptcha(cmd.id, cmd.captchaAction);
+    const solved = await captchaFromTab(tab.id, cmd.id, cmd.captchaAction);
     if (!solved?.token) return { error: `CAPTCHA_FAILED: ${solved?.error || 'no token'}` };
     freq = freq.split(CAPTCHA_SLOT).join(solved.token);
   }
 
-  let injected = null;
-  try {
-    const results = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      world: 'MAIN',
-      args: [cmd.rpcid, freq, MAX_RPC_TEXT, cmd.match || null],
-      func: async (rpcid, freqStr, maxText, match) => {
-        try {
-          const wiz = globalThis.WIZ_global_data || {};
-          const at = wiz.SNlM0e;
-          const sid = wiz.FdrFJe;
-          const bl = wiz.cfb2h;
-          if (!at) return { error: 'NO_AT_TOKEN' };
-          const reqid = Math.floor(Math.random() * 900000) + 100000;
-          const url =
-            `/_/AiSandboxAngularFrontend/data/batchexecute?rpcids=${encodeURIComponent(rpcid)}` +
-            `&f.sid=${encodeURIComponent(sid || '')}&bl=${encodeURIComponent(bl || '')}` +
-            `&hl=en-AU&_reqid=${reqid}&rt=c`;
-          const resp = await fetch(url, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-              'content-type': 'application/x-www-form-urlencoded;charset=UTF-8',
-              'x-same-domain': '1',
-            },
-            body: new URLSearchParams({ 'f.req': freqStr, at }),
-          });
-          const text = await resp.text();
-          if (match) {
-            const found = text.indexOf(match);
-            return {
-              status: resp.status,
-              matched: found !== -1,
-              text: found === -1 ? '' : text.slice(found, found + 800),
-            };
-          }
-          return { status: resp.status, text: text.slice(0, maxText) };
-        } catch (fetchErr) {
-          return { error: 'FETCH_ERROR: ' + fetchErr.message };
+  const [injected] = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    world: 'MAIN',
+    args: [cmd.rpcid, freq, MAX_RPC_TEXT, cmd.match || null, cmd.customPath || null, cmd.projectId || null],
+    func: async (rpcid, freqStr, maxText, match, customPath, projectId) => {
+      const wiz = globalThis.WIZ_global_data || {};
+      const at = wiz.SNlM0e;
+      const sid = wiz.FdrFJe;
+      const bl = wiz.cfb2h;
+      if (!at) return { error: 'NO_AT_TOKEN' };
+
+      const reqid = Math.floor(Math.random() * 900000) + 100000;
+      // Match Flow's own WIZ metadata. GEM_PIX_2 (Nano Banana Pro) rejects
+      // image generation when source-path is missing or generic '/'.
+      let sourcePath = projectId ? `/project/${projectId}` : (location.pathname || '/');
+      if (sourcePath === '/' && projectId) {
+        sourcePath = `/project/${projectId}`;
+      }
+      const hl = (document.documentElement.lang || navigator.language || 'en').split('-')[0];
+      const url = customPath
+        ? `${customPath}?bl=${encodeURIComponent(bl || '')}&f.sid=${encodeURIComponent(sid || '')}&hl=${encodeURIComponent(hl)}&_reqid=${reqid}&rt=c`
+        : `/_/AiSandboxAngularFrontend/data/batchexecute?rpcids=${encodeURIComponent(rpcid)}` +
+          `&source-path=${encodeURIComponent(sourcePath)}` +
+          `&bl=${encodeURIComponent(bl || '')}&f.sid=${encodeURIComponent(sid || '')}` +
+          `&hl=${encodeURIComponent(hl)}&_reqid=${reqid}&rt=c`;
+      const resp = await fetch(url, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'content-type': 'application/x-www-form-urlencoded;charset=UTF-8',
+          'x-same-domain': '1',
+        },
+        body: new URLSearchParams({ 'f.req': freqStr, at }),
+      });
+      const text = await resp.text();
+      // The project listing is tens of megabytes and all we ever want from it
+      // is one entry. Cutting it down here keeps that payload inside the tab
+      // instead of pushing it through the bridge on every poll.
+      if (match) {
+        const lowerText = text.toLowerCase();
+        const lowerMatch = match.toLowerCase();
+        const found = lowerText.indexOf(lowerMatch);
+        if (found !== -1) {
+          const start = Math.max(0, found - 400);
+          const end = Math.min(text.length, found + 800);
+          return {
+            status: resp.status,
+            matched: true,
+            text: text.slice(start, end),
+          };
         }
-      },
-    });
-    injected = results?.[0];
-  } catch (execErr) {
-    return { error: 'EXEC_SCRIPT_ERROR: ' + execErr.message };
-  }
+        return {
+          status: resp.status,
+          matched: false,
+          text: '',
+        };
+      }
+      return { status: resp.status, text: text.slice(0, maxText) };
+    },
+  });
 
   return injected?.result || { error: 'NO_INJECTION_RESULT' };
 }
 
 async function handleBatchRpc(msg) {
   const { id, params } = msg;
-  const { rpcid, freq, captchaAction, match } = params || {};
+  const { rpcid, freq, captchaAction, match, customPath } = params || {};
   if (!rpcid || !freq) {
     sendToAgent({ id, status: 400, error: 'INVALID_BATCH_RPC' });
     return;
   }
 
+  // Extract or receive projectId
+  let projectId = params?.projectId || null;
+  if (!projectId && typeof freq === 'string') {
+    const uuidMatch = freq.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    if (uuidMatch) projectId = uuidMatch[0];
+  }
+
   setState('running');
   const hasCaptcha = !!captchaAction;
   if (hasCaptcha) metrics.requestCount++;
-  // Hiển thị các thao tác quan trọng: tạo ảnh, tạo video, up ảnh, đổi tên, tạo dự án
-  const importantRpcs = ['ogiZ0b', 'eb1hJf', 'maseQ', 'mYWVGd', 'jHPbke', 'o8DA4'];
-  const visible = hasCaptcha || importantRpcs.includes(rpcid);
-  const logType = _classifyRpc(rpcid);
+  // Polls and listing lookups run constantly; only generates and project creation
+  // are worth a row in the log the popup/sidepanel shows.
+  const visible = hasCaptcha || rpcid === 'jHPbke';
+  const _RPC_LABELS = {
+    ogiZ0b: 'GEN_IMG', eb1hJf: 'GEN_VID', YhhmEf: 'GEN_VID',
+    nprQif: 'GEN_VID', MZZa6b: 'GEN_VID_REF',
+    maseQ: 'UPLOAD', SPrCad: 'UPSCALE',
+    jHPbke: 'CREATE_PROJECT', jwpduf: 'POLL',
+    Zzl0ze: 'LIST_MEDIA', as29s: 'MEDIA',
+    o8DA4: 'RENAME_PROJECT', mYWVGd: 'RENAME',
+  };
+  const logType = _RPC_LABELS[rpcid] || `RPC:${rpcid}`;
   if (visible) {
     addRequestLog({
-      id, type: logType, time: new Date().toISOString(),
+      id, projectId, type: logType, time: new Date().toISOString(),
       status: 'processing', error: null, outputUrl: null, url: rpcid,
       payloadSummary: freq.slice(0, 200),
     });
   }
 
   try {
-    const out = await runBatchRpc({ id, rpcid, freq, captchaAction, match });
+    const out = await runBatchRpc({ id, rpcid, freq, captchaAction, match, customPath, projectId });
+    if (rpcid === 'jHPbke' && out.text) {
+      const matchId = out.text.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+      if (matchId) projectId = matchId[0];
+    }
+
     if (out.error) {
       if (hasCaptcha) { metrics.failedCount++; metrics.lastError = out.error; }
-      if (visible) updateRequestLog(id, { status: 'failed', error: out.error });
+      if (visible) updateRequestLog(id, { status: 'failed', error: out.error, projectId });
       sendToAgent({ id, status: 502, error: out.error });
     } else {
       if (hasCaptcha) { metrics.successCount++; metrics.lastError = null; }
       if (visible) {
         updateRequestLog(id, {
-          status: 'success', httpStatus: out.status,
+          status: 'success', httpStatus: out.status, projectId,
           responseSummary: (out.text || '').slice(0, 300),
         });
       }
@@ -836,7 +934,7 @@ async function handleBatchRpc(msg) {
   } catch (e) {
     const err = e?.message || 'BATCH_RPC_FAILED';
     if (hasCaptcha) { metrics.failedCount++; metrics.lastError = err; }
-    if (visible) updateRequestLog(id, { status: 'failed', error: err });
+    if (visible) updateRequestLog(id, { status: 'failed', error: err, projectId });
     sendToAgent({ id, status: 500, error: err });
   }
 
@@ -848,9 +946,9 @@ async function handleBatchRpc(msg) {
 
 async function handleTrpcRequest(msg) {
   const { id, params } = msg;
-  const { url, method = 'POST', headers = {}, body, responseMode } = params;
+  const { url, method = 'POST', headers = {}, body, responseMode = 'json' } = params;
 
-  if (!url || (!url.startsWith('https://labs.google/') && !url.startsWith('https://flow.google.com/'))) {
+  if (!url || !url.startsWith('https://labs.google/')) {
     sendToAgent({ id, error: 'INVALID_TRPC_URL' });
     return;
   }
@@ -900,6 +998,12 @@ async function handleTrpcRequest(msg) {
   }
 }
 
+// Legacy REST proxy against aisandbox-pa. No current agent sends `api_request`;
+// kept only so an extension updated ahead of its agent still serves an older
+// one. It needs a `Bearer ya29.…` that Flow stopped minting, so it 401s on any
+// post-migration profile — as does sendTelemetry below, which early-returns
+// without a flowKey. Nothing here reaches aisandbox-pa any more; when the
+// oldest agent in the wild speaks batch_rpc, this and the host permission go.
 async function handleApiRequest(msg) {
   const { id, params } = msg;
   const { url, method, headers, body, captchaAction } = params;
@@ -1034,18 +1138,6 @@ function broadcastStatus() {
 }
 
 chrome.runtime.onMessage.addListener((msg, _, reply) => {
-  if (msg.type === 'TOKEN_CAPTURED') {
-    flowKey = msg.token;
-    metrics.tokenCapturedAt = Date.now();
-    chrome.storage.local.set({ flowKey, metrics });
-    console.log('[FlowAgent] Bearer token captured from page fetch');
-    if (ws?.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'token_captured', flowKey }));
-    }
-    reply({ ok: true });
-    return true;
-  }
-
   if (msg.type === 'STATUS') {
     reply({
       connected: ws?.readyState === WebSocket.OPEN,
@@ -1082,18 +1174,6 @@ chrome.runtime.onMessage.addListener((msg, _, reply) => {
     return true;
   }
 
-  if (msg.type === 'CLEAR_REQUEST_LOG') {
-    requestLog = [];
-    broadcastRequestLog();
-    reply({ ok: true });
-    return true;
-  }
-
-  if (msg.type === 'RELOAD_EXTENSION') {
-    chrome.runtime.reload();
-    return;
-  }
-
   if (msg.type === 'OPEN_FLOW_TAB') {
     chrome.tabs.query({ url: flowUrls }).then((tabs) => {
       if (tabs.length) {
@@ -1108,8 +1188,15 @@ chrome.runtime.onMessage.addListener((msg, _, reply) => {
     return true;
   }
 
+  if (msg.type === 'OPEN_PROJECT_TAB') {
+    openProjectTab(msg.projectId)
+      .then((res) => reply(res))
+      .catch((e) => reply({ error: e.message }));
+    return true;
+  }
+
   if (msg.type === 'REFRESH_TOKEN') {
-    captureTokenFromFlowTab()
+    captureTokenFromFlowTab({ createIfMissing: true })
       .then(() => reply({ ok: true }))
       .catch((e) => reply({ error: e.message }));
     return true;
@@ -1121,6 +1208,7 @@ chrome.runtime.onMessage.addListener((msg, _, reply) => {
       .catch((e) => reply({ error: e.message }));
     return true;
   }
+
 
   if (msg.type === 'TRPC_MEDIA_URLS') {
     handleTrpcMediaUrls(msg.trpcUrl, msg.body);
@@ -1135,8 +1223,8 @@ chrome.runtime.onMessage.addListener((msg, _, reply) => {
 
 function handleTrpcMediaUrls(trpcUrl, bodyText) {
   try {
-    // Extract all fresh signed URLs (flow-content.google or legacy GCS)
-    const urlRegex = /https:\/\/(?:flow-content\.google|storage\.googleapis\.com\/ai-sandbox-videofx)\/(?:image|video)\/[0-9a-f-]{36}\?[^"'\s]+/g;
+    // Extract all fresh GCS signed URLs
+    const urlRegex = /https:\/\/storage\.googleapis\.com\/ai-sandbox-videofx\/(?:image|video)\/[0-9a-f-]{36}\?[^"'\s]+/g;
     const matches = bodyText.match(urlRegex) || [];
     if (!matches.length) return;
 
@@ -1159,20 +1247,6 @@ function handleTrpcMediaUrls(trpcUrl, bodyText) {
     console.log(`[FlowAgent] Captured ${entries.length} fresh media URLs from TRPC`);
     // URL refresh is silent — don't show in request log
 
-    // Update matching video/upscale entries in requestLog if done
-    for (const item of entries) {
-      if (item.mediaType === 'video') {
-        _latestVideoUrls.push({ url: item.url, time: Date.now(), method: 'TRPC', mediaId: item.mediaId });
-        if (_latestVideoUrls.length > 50) _latestVideoUrls.shift();
-        const vidEntry = requestLog.find(e => ['GEN_VID', 'GEN_VID_REF', 'UPSCALE'].includes(e.type) && (!e.outputUrl || e.status !== 'COMPLETED'));
-        if (vidEntry) {
-          vidEntry.outputUrl = item.url;
-          vidEntry.status = 'COMPLETED';
-          broadcastRequestLog();
-        }
-      }
-    }
-
     // Forward to agent for DB update
     if (ws?.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({
@@ -1191,14 +1265,19 @@ function sleep(ms) {
 
 // ─── Human-like Telemetry ──────────────────────────────────
 // Periodically send tracking events to Google's analytics endpoints
+// to mimic normal browser behavior.
+
 const _UA = navigator.userAgent;
 let _telemetrySessionId = `;${Date.now()}`;
+
 function _rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
 function _buildBatchLogPayload() {
+  const events = [];
   const types = ['FLOW_IMAGE_LATENCY', 'FLOW_VIDEO_LATENCY'];
-  return {
-    appEvents: Array.from({ length: _rand(1, 3) }, () => ({
+  const count = _rand(1, 3);
+  for (let i = 0; i < count; i++) {
+    events.push({
       event: types[_rand(0, types.length - 1)],
       eventProperties: [
         { key: 'CURRENT_TIME_MS', doubleValue: Date.now() },
@@ -1208,43 +1287,81 @@ function _buildBatchLogPayload() {
       ],
       eventMetadata: { sessionId: _telemetrySessionId },
       eventTime: new Date().toISOString(),
-    })),
-  };
+    });
+  }
+  return { appEvents: events };
 }
 
 function _buildFrontendEventsPayload() {
-  const eventTypes = ['FLOW_IMAGE_LATENCY', 'FLOW_VIDEO_LATENCY', 'GRID_SCROLL_DEPTH', 'FLOW_PROJECT_OPEN', 'FLOW_SCENE_VIEW'];
-  return {
-    events: Array.from({ length: _rand(1, 4) }, () => {
-      const et = eventTypes[_rand(0, eventTypes.length - 1)];
-      const params = {
-        USER_AGENT: { '@type': 'type.googleapis.com/google.protobuf.StringValue', value: _UA },
-        IS_DESKTOP: { '@type': 'type.googleapis.com/google.protobuf.StringValue', value: 'true' },
-      };
-      if (et.includes('LATENCY')) {
-        params.CURRENT_TIME_MS = { '@type': 'type.googleapis.com/google.protobuf.StringValue', value: String(Date.now()) };
-        params.DURATION_MS = { '@type': 'type.googleapis.com/google.protobuf.StringValue', value: String(_rand(100, 600)) };
-      }
-      if (et === 'GRID_SCROLL_DEPTH') params.MEDIA_GENERATION_PAYGATE_TIER = { '@type': 'type.googleapis.com/google.protobuf.StringValue', value: 'PAYGATE_TIER_TWO' };
-      return { eventType: et, metadata: { sessionId: _telemetrySessionId, createTime: new Date().toISOString(), additionalParams: params } };
-    }),
-  };
+  const eventTypes = [
+    'FLOW_IMAGE_LATENCY', 'FLOW_VIDEO_LATENCY', 'GRID_SCROLL_DEPTH',
+    'FLOW_PROJECT_OPEN', 'FLOW_SCENE_VIEW',
+  ];
+  const count = _rand(1, 4);
+  const events = [];
+  for (let i = 0; i < count; i++) {
+    const et = eventTypes[_rand(0, eventTypes.length - 1)];
+    const params = {
+      USER_AGENT: { '@type': 'type.googleapis.com/google.protobuf.StringValue', value: _UA },
+      IS_DESKTOP: { '@type': 'type.googleapis.com/google.protobuf.StringValue', value: 'true' },
+    };
+    if (et.includes('LATENCY')) {
+      params.CURRENT_TIME_MS = { '@type': 'type.googleapis.com/google.protobuf.StringValue', value: String(Date.now()) };
+      params.DURATION_MS = { '@type': 'type.googleapis.com/google.protobuf.StringValue', value: String(_rand(100, 600)) };
+    }
+    if (et === 'GRID_SCROLL_DEPTH') {
+      params.MEDIA_GENERATION_PAYGATE_TIER = { '@type': 'type.googleapis.com/google.protobuf.StringValue', value: 'PAYGATE_TIER_TWO' };
+    }
+    events.push({
+      eventType: et,
+      metadata: {
+        sessionId: _telemetrySessionId,
+        createTime: new Date().toISOString(),
+        additionalParams: params,
+      },
+    });
+  }
+  return { events };
 }
 
 async function sendTelemetry() {
+  // Legacy-path camouflage: these endpoints want the bearer Flow no longer
+  // mints, so on the batch path there is no flowKey and this is a no-op.
   if (!flowKey || state === 'off') return;
-  const headers = { 'Content-Type': 'text/plain;charset=UTF-8', authorization: `Bearer ${flowKey}` };
+
+  const headers = {
+    'Content-Type': 'text/plain;charset=UTF-8',
+    'authorization': `Bearer ${flowKey}`,
+  };
+
+  // Telemetry is silent — don't show in request log
   try {
-    const url = Math.random() < 0.5 ? 'https://aisandbox-pa.googleapis.com/v1:batchLog' : 'https://aisandbox-pa.googleapis.com/v1/flow:batchLogFrontendEvents';
-    const body = Math.random() < 0.5 ? _buildBatchLogPayload() : _buildFrontendEventsPayload();
-    await fetch(url, { method: 'POST', headers, credentials: 'include', body: JSON.stringify(body) });
+    if (Math.random() < 0.5) {
+      await fetch(`https://aisandbox-pa.googleapis.com/v1:batchLog`, {
+        method: 'POST', headers, credentials: 'include',
+        body: JSON.stringify(_buildBatchLogPayload()),
+      });
+    } else {
+      await fetch(`https://aisandbox-pa.googleapis.com/v1/flow:batchLogFrontendEvents`, {
+        method: 'POST', headers, credentials: 'include',
+        body: JSON.stringify(_buildFrontendEventsPayload()),
+      });
+    }
   } catch {}
 }
 
+// Send telemetry at random intervals (45-120s) to look organic
 function scheduleTelemetry() {
-  setTimeout(async () => { await sendTelemetry(); scheduleTelemetry(); }, _rand(45, 120) * 1000);
+  const delay = _rand(45, 120) * 1000;
+  setTimeout(async () => {
+    await sendTelemetry();
+    scheduleTelemetry(); // reschedule with new random interval
+  }, delay);
 }
 
+// Refresh session ID every ~30min like a real user
 setInterval(() => { _telemetrySessionId = `;${Date.now()}`; }, _rand(25, 35) * 60 * 1000);
+
 scheduleTelemetry();
+
 console.log('[FlowAgent] Extension loaded');

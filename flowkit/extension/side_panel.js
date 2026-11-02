@@ -147,8 +147,13 @@ function updateRequestLog(entries) {
       ? `<td class="td-error" title="${escHtml(error)}">${escHtml(truncate(error, 28))}</td>`
       : `<td class="td-error empty">—</td>`;
 
+    const pid = entry.projectId || '';
+
     return `<tr>
-      <td class="td-id" data-request-id="${escHtml(entry.id || '')}">${escHtml(shortId)}</td>
+      <td class="td-id" data-request-id="${escHtml(entry.id || '')}" data-project-id="${escHtml(pid)}" title="${pid ? `Open project ${pid} on Google Flow` : 'Click to open project / view details'}">
+        <span class="id-text">${escHtml(shortId)}</span>
+        <span class="id-link-icon">↗</span>
+      </td>
       <td class="td-type">${escHtml(type)}</td>
       <td class="td-time">${escHtml(time)}</td>
       <td>${badgeHtml}</td>
@@ -158,10 +163,53 @@ function updateRequestLog(entries) {
 
   tbody.innerHTML = rows.join('');
 
-  // Attach click handlers to ID cells
+  // Attach click handlers to ID cells: Open project on Google Flow
   tbody.querySelectorAll('.td-id[data-request-id]').forEach(td => {
-    td.addEventListener('click', () => {
+    td.addEventListener('click', async (e) => {
+      e.stopPropagation();
       const reqId = td.getAttribute('data-request-id');
+      let pid = td.getAttribute('data-project-id');
+
+      if (!pid) {
+        const found = _logEntries.find(entry => entry.id === reqId);
+        if (found?.projectId) pid = found.projectId;
+      }
+
+      if (!pid && reqId) {
+        try {
+          const resp = await fetch(`http://127.0.0.1:8100/api/requests/${reqId}`);
+          if (resp.ok) {
+            const reqData = await resp.json();
+            if (reqData.project_id) {
+              pid = reqData.project_id;
+              td.setAttribute('data-project-id', pid);
+              const found = _logEntries.find(entry => entry.id === reqId);
+              if (found) found.projectId = pid;
+            }
+          }
+        } catch (fetchErr) {
+          console.warn('[SidePanel] Could not fetch request details:', fetchErr);
+        }
+      }
+
+      if (pid) {
+        chrome.runtime.sendMessage({ type: 'OPEN_PROJECT_TAB', projectId: pid }, (res) => {
+          if (chrome.runtime.lastError) {
+            window.open(`https://flow.google.com/project/${pid}`, '_blank');
+          }
+        });
+      } else {
+        if (reqId) showRequestDetail(reqId);
+      }
+    });
+  });
+
+  // Attach click handler to rows: show detail modal
+  tbody.querySelectorAll('tr').forEach(tr => {
+    tr.addEventListener('click', (e) => {
+      if (e.target.closest('.td-id')) return;
+      const tdId = tr.querySelector('.td-id');
+      const reqId = tdId ? tdId.getAttribute('data-request-id') : null;
       if (reqId) showRequestDetail(reqId);
     });
   });
@@ -196,6 +244,7 @@ function showRequestDetail(reqId) {
 
   const fields = [
     ['ID', entry.id],
+    ['Project ID', entry.projectId || '—'],
     ['Type', formatType(entry.type || entry.method)],
     ['Time', formatTime(entry.time || entry.timestamp || entry.createdAt)],
     ['Status', entry.status || entry.state || 'pending'],
@@ -215,6 +264,37 @@ function showRequestDetail(reqId) {
       <div class="${cls}">${escHtml(String(value || '—'))}</div>
     </div>`;
   }).join('');
+
+  // Handle open project button in modal
+  const openProjBtn = document.getElementById('modal-btn-open-project');
+  if (openProjBtn) {
+    let pid = entry.projectId;
+    if (!pid) {
+      fetch(`http://127.0.0.1:8100/api/requests/${reqId}`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.project_id) {
+            entry.projectId = d.project_id;
+            openProjBtn.style.display = 'block';
+            openProjBtn.textContent = `🔗 Open Project ${d.project_id.slice(0, 8)}... on Flow`;
+            openProjBtn.onclick = () => {
+              chrome.runtime.sendMessage({ type: 'OPEN_PROJECT_TAB', projectId: d.project_id });
+            };
+          }
+        })
+        .catch(() => {});
+    }
+
+    if (pid) {
+      openProjBtn.style.display = 'block';
+      openProjBtn.textContent = `🔗 Open Project ${pid.slice(0, 8)}... on Flow`;
+      openProjBtn.onclick = () => {
+        chrome.runtime.sendMessage({ type: 'OPEN_PROJECT_TAB', projectId: pid });
+      };
+    } else {
+      openProjBtn.style.display = 'none';
+    }
+  }
 
   overlay.classList.add('open');
 }

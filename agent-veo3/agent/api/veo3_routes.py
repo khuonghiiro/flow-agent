@@ -347,6 +347,16 @@ async def reload_extension():
     return await client._send("reload_extension", {}, timeout=10)
 
 
+@flow_veo3_router.post("/open-project/{pid}")
+@flow_veo3_router.get("/open-project/{pid}")
+async def open_project_endpoint(pid: str):
+    """Open or switch to project tab in Chrome via extension."""
+    client = get_flow_client()
+    if not client.connected:
+        raise HTTPException(503, "Extension not connected")
+    return await client._send("open_project_tab", {"projectId": pid}, timeout=15)
+
+
 @flow_veo3_router.get("/test-captcha")
 async def test_captcha_endpoint(action: str = "IMAGE_GENERATION"):
     """Test reCAPTCHA token generation via extension."""

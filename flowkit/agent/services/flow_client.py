@@ -562,6 +562,7 @@ class FlowClient:
                         captcha_action: str | None = None,
                         match: str | None = None,
                         custom_path: str | None = None,
+                        project_id: str | None = None,
                         timeout: float = 300) -> dict:
         """Run one batchexecute RPC in the Flow page. Returns the raw body.
 
@@ -576,6 +577,8 @@ class FlowClient:
             params["match"] = match
         if custom_path:
             params["customPath"] = custom_path
+        if project_id:
+            params["projectId"] = str(project_id)
 
         is_generation = captcha_action in {fb.CAPTCHA_IMAGE, fb.CAPTCHA_VIDEO}
         if not is_generation:
@@ -661,9 +664,10 @@ class FlowClient:
 
     async def _batch_payload(self, rpcid: str, freq: str,
                              captcha_action: str | None = None,
+                             project_id: str | None = None,
                              timeout: float = 300):
         """One RPC, unwrapped to its inner payload. Raises on anything else."""
-        result = await self.batch_rpc(rpcid, freq, captcha_action, timeout=timeout)
+        result = await self.batch_rpc(rpcid, freq, captcha_action, project_id=project_id, timeout=timeout)
         if result.get("error"):
             raise fb.FlowBatchError(f"{rpcid}: {result['error']}")
         return fb.first_payload(result.get("data") or "", rpcid)
@@ -767,7 +771,7 @@ class FlowClient:
                     model=model, ref_media_ids=refs, base_media_id=base_media_id,
                 )
                 payload = await self._batch_payload(
-                    fb.RPC_GEN_IMAGE, freq, fb.CAPTCHA_IMAGE
+                    fb.RPC_GEN_IMAGE, freq, fb.CAPTCHA_IMAGE, project_id=pid
                 )
                 generated = fb.read_images(payload)
                 if not generated:
@@ -876,6 +880,7 @@ class FlowClient:
                 fb.RPC_UPSCALE_IMAGE,
                 freq,
                 fb.CAPTCHA_IMAGE,
+                project_id=pid,
                 timeout=150,
             )
             encoded = fb.read_upscaled_image(payload)
@@ -918,7 +923,7 @@ class FlowClient:
                 model=self._batch_video_model(user_paygate_tier, gen_type, aspect_ratio),
             )
             payload = await self._batch_payload(
-                fb.RPC_GEN_VIDEO, freq, fb.CAPTCHA_VIDEO, timeout=120)
+                fb.RPC_GEN_VIDEO, freq, fb.CAPTCHA_VIDEO, project_id=pid, timeout=120)
             operation = fb.read_operation(payload)
         except Exception as e:
             return _batch_error(e)
