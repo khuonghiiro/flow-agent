@@ -4,23 +4,25 @@ Tài liệu này là quy tắc bắt buộc áp dụng khi nhận yêu cầu t�
 
 ---
 
-## 1. Quy Tắc Chọn Tỉ Lệ Khung Ảnh (`16:9` / `4:3` / `1:1` / `3:4` / `9:16`) & Lưới (`3×3 = 9 Frames` hoặc `4×4 = 16 Frames`) Theo Tổng Thể Hình Khối Hiệu Ứng (Lõi + Bóng Mờ)
+## 1. Quy Tắc Chuẩn: Lưới `4×4` (16 Frames) Kết Hợp Tỉ Lệ `4:3` / `1:1` / `3:4` & Nguyên Lý "Thu Nhỏ Hiệu Ứng Trong Lòng BBox"
 
-> 💡 **NGUYÊN LÝ HÌNH HỌC & CHỐNG CẮT BÓNG MỜ CỐT LÕI**:
-> 1. Khi chia bức ảnh thành lưới có số hàng bằng số cột (`3×3 = 9 frames` hoặc `4×4 = 16 frames`), **tỉ lệ khung của từng ô frame con sẽ BẰNG ĐÚNG tỉ lệ khung của bức ảnh tổng thể**!
-> 2. **Ưu tiên dùng lưới `3×3` (3 hàng × 3 cột = 9 frames)** cho các hoạt ảnh **Animate Loop** hoặc hiệu ứng có lớp bóng mờ/hào quang rộng, vì mỗi ô frame trong lưới `3×3` có diện tích lớn gấp **1.78 lần** so với lưới `4×4`, tạo khoảng đệm rộng rãi để phần bóng mờ không bị khung frame cắt mất.
-> 3. **Khi chọn tỉ lệ ảnh, BẮT BUỘC phải tính theo TỔNG THỂ HÌNH KHỐI CỦA HIỆU ỨNG = (Phần Lõi Chính + Phần Bóng Mờ / Sương Hào Quang Lan Tỏa Xung Quanh)**:
->    - Nếu phần lõi nằm ngang nhưng có cột bóng mờ/sương khói bốc cao lên trên, mà dùng khung quá dẹt hoặc vẽ quá to thì đỉnh bóng mờ sẽ chạm trần ô frame và bị cắt phẳng! Khi đó phải **chọn tỉ lệ ảnh phù hợp với cả phần bóng mờ** VÀ **giới hạn tổng kích thước (Lõi + Bóng mờ) chỉ chiếm tối đa `55%–60%` diện tích ô frame**.
+> 💡 **3 NGUYÊN LÝ CỐT LÕI (BẮT BUỘC TUÂN THỦ)**:
+> 1. **Luôn Ưu Tiên Lưới `4×4` (4 Hàng × 4 Cột = 16 Frames)**:
+>    - Lưới `3×3` (9 frames) quá ít frame khiến hoạt ảnh bị ngắn và thiếu độ mịn. Do đó **mặc định luôn ưu tiên lưới `4×4` (16 frames)** cho mọi tấm Sprite Sheet (cả Mở, Xoáy Lặp 360°, Đóng, Sét đánh, Vụ nổ).
+> 2. **Ưu Tiên 3 Tỉ Lệ Khung Hình Cân Đối `4:3` (Ngang) — `1:1` (Vuông/Tròn) — `3:4` (Dọc) Khi Chia Lưới `4×4`**:
+>    - Khi chia `4 hàng × 4 cột`, nếu dùng `16:9` thì chiều cao mỗi hàng bị quá thấp (dễ cắt đỉnh bóng mờ), còn nếu dùng `9:16` thì chiều ngang mỗi cột bị quá hẹp.
+>    - Vì vậy, **ưu tiên hàng đầu là 3 tỉ lệ cân đối `4:3` (`IMAGE_ASPECT_RATIO_LANDSCAPE_FOUR_THREE`), `1:1` (`IMAGE_ASPECT_RATIO_SQUARE`), và `3:4` (`IMAGE_ASPECT_RATIO_PORTRAIT_THREE_FOUR`)** tùy theo hình thái hiệu ứng (ngang, tròn đều, hay dọc) để mỗi ô BBox `1/4 × 1/4` luôn có đủ cả chiều rộng lẫn chiều cao!
+> 3. **Nguyên Lý "Frame Thu Nhỏ Gọn Trong Lòng BBox" (`Miniaturized 40%–45% Scale Inside 1/4×1/4 BBox — Scale Up In Post`)**:
+>    - Thay vì vẽ hiệu ứng to tràn sát ranh giới ô `1/4 × 1/4`, **BẮT BUỘC coi mỗi hiệu ứng trong ô như một phiên bản thu nhỏ (`miniature / scaled-down sprite`) chỉ chiếm tối đa `40%–45%` diện tích của ô BBox `1/4 × 1/4` đó** (ngay cả khi hiệu ứng đang ở trạng thái "mở tối đa" hay "xoáy lặp cực đại")!
+>    - Nhờ vẽ thu nhỏ gọn trong lòng BBox với **55%–60% khoảng đệm nền trống xung quanh**, **100% chi tiết + bóng mờ dư ảnh + sương hào quang + hạt tia sáng đều nằm lọt thỏm hoàn toàn bên trong ô BBox `1/4 × 1/4`**, tuyệt đối không có bất kỳ chi tiết hay bóng mờ nào thừa ra ngoài BBox hay bị cắt cụt. Khi người dùng cắt (slice) 16 ô `1/4 × 1/4` ra và phóng to (scale up) lên trong phần mềm dựng phim / game engine sẽ thu được hiệu ứng hoàn hảo không tì vết!
 
-| Hình Thái Tổng Thể (Lõi Hiệu Ứng + Bóng Mờ / Hào Quang) | Tỉ Lệ Khung Ảnh Phù Hợp (`aspect_ratio`) | Bố Cục Lưới Khuyên Dùng | Ví Dụ Hiệu Ứng Cụ Thể |
+| Hình Thái Tổng Thể (Lõi Hiệu Ứng + Bóng Mờ / Hào Quang) | Tỉ Lệ Khung Ảnh Ưu Tiên Cho Lưới `4×4` (16 Frames) | Kích Thước Thu Nhỏ Trong Mỗi Ô BBox `1/4 × 1/4` | Ví Dụ Hiệu Ứng Cụ Thể |
 |---|---|---|---|
-| **1. Kéo Rộng Ngang Dẹt (`Wide Horizontal-Span`)** | **`16:9` (`IMAGE_ASPECT_RATIO_LANDSCAPE`)** | **`3×3 (9 Frames)`** hoặc `4×4 (16 Frames)` | - **Cổng dịch chuyển mặt đất / trên trời dạng dẹt ngang** (lớp bóng mờ dư ảnh ôm sát vành elip ngang `4:1`, không bốc khói cao).<br>- **Sóng xung kích lan ngang mặt đất**, **Vệt chém kiếm ngang**, **Luồng chưởng bắn ngang**. |
-| **2. Bè Ngang Kèm Cột Bóng Mờ / Sương Bốc Lên (`Horizontal + Rising Mist Shadow`)** | **`4:3` (`IMAGE_ASPECT_RATIO_LANDSCAPE_FOUR_THREE`)** | **`3×3 (9 Frames)`** | - **Cổng mặt đất có làn sương hào quang bốc cao phía trên** (dùng `4:3` để có thêm chiều cao cho lớp bóng mờ bốc lên mà không bị cắt đỉnh như `16:9`!), **Đám lửa cháy ngang bốc khói**, **Vụ nổ mặt đất dạng vòm bán cầu**. |
-| **3. Tròn Đều / Đối Xứng Tâm 360° (`Radial / Symmetrical 1:1`)** | **`1:1` (`IMAGE_ASPECT_RATIO_SQUARE`)** | **`3×3 (9 Frames)`** hoặc `4×4 (16 Frames)` | - **Quả cầu năng lượng xoay Loop (`Energy Orb`)**, **Khiên ma pháp cầu tròn**, **Vòng ma pháp / Cổng dịch chuyển chính diện `0°`**, **Vụ nổ trên không tỏa tròn 360°**. |
-| **4. Vươn Cao Dọc Vừa Phải (`Moderate Vertical`)** | **`3:4` (`IMAGE_ASPECT_RATIO_PORTRAIT_THREE_FOUR`)** | **`3×3 (9 Frames)`** | - **Ngọn lửa phép thuật cháy bập bùng tại chỗ (`Looping Magic Flame`)**, **Linh hồn / Hào quang nhân vật bốc lên**, **Suối nước / Bụi phép bay lên**. |
-| **5. Kéo Cao Thẳng Đứng (`Tall Vertical-Span`)** | **`9:16` (`IMAGE_ASPECT_RATIO_PORTRAIT`)** | **`3×3 (9 Frames)`** | - **Tia sét / Cột điện giáng thẳng đứng (`Vertical Lightning`)**, **Cột lốc xoáy cao (`Tornado Vortex Loop`)**, **Cột sáng thiên phạt**, **Cổng dịch chuyển dựng đứng bên Trái / Phải (`1:4`)**. |
+| **1. Hiệu Ứng Dạng Ngang (`Horizontal VFX + Rising/Side Shadow`)** | **`4:3` (`IMAGE_ASPECT_RATIO_LANDSCAPE_FOUR_THREE`)**<br>*(hoặc `16:9` nếu cực dẹt không có sương cao)* | **Thu nhỏ `40%–45%` trong lòng ô `4:3`** (chừa hành lang nền trống rộng giữa 4 hàng và 4 cột) | - **Cổng dịch chuyển mặt đất / trên trời** (elip ngang kèm lớp bóng mờ dư ảnh & làn sương hào quang bốc lên trên).<br>- **Sóng xung kích mặt đất**, **Vệt chém ngang**, **Đám lửa/khói lan ngang**. |
+| **2. Hiệu Ứng Tròn Đều / Đối Xứng Tâm (`Radial / Symmetrical 1:1 VFX`)** | **`1:1` (`IMAGE_ASPECT_RATIO_SQUARE`)** | **Thu nhỏ `40%–45%` trong lòng ô `1:1`** | - **Quả cầu năng lượng xoay Loop (`Energy Orb`)**, **Khiên ma pháp cầu tròn**, **Vòng ma pháp / Cổng dịch chuyển chính diện `0°`**, **Vụ nổ tỏa tròn 360°**. |
+| **3. Hiệu Ứng Dạng Dọc (`Vertical VFX + Aura Shadow`)** | **`3:4` (`IMAGE_ASPECT_RATIO_PORTRAIT_THREE_FOUR`)**<br>*(hoặc `9:16` nếu cực mảnh)* | **Thu nhỏ `40%–45%` trong lòng ô `3:4`** | - **Tia sét giáng thẳng đứng (`Vertical Lightning`)**, **Cột lốc xoáy điện/lửa (`Tornado Vortex Loop`)**, **Ngọn lửa phép thuật cháy bập bùng**, **Cổng dịch chuyển dựng đứng bên Trái / Phải (`1:4`)**. |
 
-- **Lưu ý đồng bộ trong Chuỗi 3 Tấm (`Mở Cổng → Xoáy Lặp 360° → Đóng Cổng`)**: Cả 3 tấm trong cùng một chuỗi hiệu ứng phải dùng chung cùng một tỉ lệ khung ảnh và cùng bố cục lưới để kích thước cắt frame khớp nhau 100%.
+- **Lưu ý đồng bộ trong Chuỗi 3 Tấm (`Mở Cổng → Xoáy Lặp 360° → Đóng Cổng`)**: Cả 3 tấm (48 frames = 3 × 16 frames) phải dùng chung cùng một tỉ lệ khung ảnh (ví dụ cùng là `4:3` cho cổng mặt đất) và cùng tỷ lệ thu nhỏ trong BBox để khi cắt và scale lên khớp nhau 100%.
 
 ---
 
@@ -101,16 +103,16 @@ Vì vậy, khi tạo hiệu ứng có vòng đời đầy đủ hoặc có chu�
 
 ---
 
-## 5. Quy Tắc Giới Hạn Bounding Box, CẤM Bóng Mờ Lan Ra Ngoài Frame & CẤM Viền Khung (ZERO SHADOW/MIST CLIPPING & ZERO BORDERS)
+## 5. Quy Tắc "Frame Thu Nhỏ Gọn Trong Lòng BBox 4×4" — CẤM Chi Tiết Hoặc Bóng Mờ Thừa Ra Ngoài BBox (MINIATURE IN-BBOX CONTAINMENT & ZERO BORDERS)
 
-> ⚠️ **LỖI NGHIÊM TRỌNG CẦN TRÁNH ("BÓNG MỜ BỊ KHUNG FRAME CHE / CẮT MẤT")**:
-> - Nếu viết trong prompt là `"100% full width"` hoặc vẽ hiệu ứng quá to trong ô frame, phần **bóng mờ / làn sương hào quang phía trên hoặc hai bên (`rising mist / outer glow shadow`)** sẽ vượt ra tới ranh giới vô hình giữa các hàng/cột và bị **cắt cụt phẳng ngang (`flat-topped horizontal cut-off / hard bounding-box clipping`)**, hoặc tràn sang frame bên cạnh, hoặc bị mép ảnh cắt mất!
+> ⚠️ **NGUYÊN TẮC CỐT LÕI ("THU NHỎ TRONG BBOX ĐỂ CẮT VÀ SCALE LÊN SAU")**:
+> - Người dùng sẽ chia tấm ảnh `4×4` thành 16 ô BBox (`1/4 chiều rộng × 1/4 chiều cao`) rồi cắt (crop) từng frame ra và **scale phóng to lên** khi đưa vào dự án.
+> - Vì vậy, nếu bất kỳ chi tiết nào (tia sáng, hạt lửa, hay **đỉnh/mép của cái bóng mờ sương hào quang**) vượt ra khỏi ranh giới `1/4 × 1/4` của ô BBox đó, thì khi cắt ra hiệu ứng sẽ bị **mất góc / cụt bóng mờ / dính mảnh thừa sang frame bên cạnh**!
 
-1. **Toàn bộ Hiệu Ứng + Lớp Bóng Mờ Ngoài Cùng Phải Nằm Gọn 100% Trong Lòng Frame (Tối đa 55%–60% diện tích ô frame)**:
-   - **CẤM DÙNG cụm từ `"100% full width"` / `"fills 100% of the space"`**: Cụm từ này làm AI phóng hiệu ứng tràn sát mép ô frame khiến phần bóng mờ bị cắt cụt! Thay vào đó, **BẮT BUỘC dùng `"compact full mature size (occupying at most 55% of its isolated frame space, leaving 45% pure flat empty background padding all around)"`**.
-   - **Bóng mờ phải tan hết về `0%` TRƯỚC KHI chạm ranh giới frame**:
-     - `The entire effect INCLUDING the outermost tip of its soft motion-blur shadow and rising mist MUST fade out completely to 0% opacity into the pure background WELL INSIDE its own frame space — STRICTLY FORBIDDEN to let the mist or shadow get cut off flat at the top, bottom, left, or right boundary of any frame, and NEVER bleed into neighboring frames!`
-   - **Nếu bóng mờ/hào quang cần vươn cao hoặc vươn rộng hơn**: Phải chủ động **chọn lại tỉ lệ khung ảnh tổng thể (`16:9`, `4:3`, `1:1`, `3:4`, `9:16`)** và **thu gọn kích thước lõi hiệu ứng** để cả phần lõi lẫn phần bóng mờ đều nằm lọt thỏm thoải mái bên trong từng ô frame!
+1. **Bắt Buộc Vẽ Hiệu Ứng Ở Kích Thước "Thu Nhỏ (`Miniature 40%–45% Scale`)" Nằm Lọt Thỏm Giữa Tâm Ô BBox `1/4 × 1/4`**:
+   - **CẤM TUYỆT ĐỐI dùng từ `"100% full width"` / `"fills the frame"` / `"large"`**: Ngay cả khi mô tả cổng mở cực đại (Frame 16 của Tấm 1 hoặc cả 16 frames của Tấm 2 Loop), phải gọi đó là **`"compact miniature mature size (occupying at most 40% to 45% of its 1/4 x 1/4 bounding box, leaving 55% to 60% pure empty background padding all around)"`**.
+   - **Toàn bộ Lõi + Bóng Mờ + Hạt Năng Lượng phải kết thúc 100% bên trong vùng 45% trung tâm của BBox**:
+     - `Every single sprite — strictly including its outermost motion-blur shadow, rising mist tip, and stray sparks — MUST be drawn as a compact miniature centered inside its 1/4 x 1/4 slot, surrounded by wide empty background corridors between all 4 rows and all 4 columns so ZERO details and ZERO shadow mist ever cross or touch the invisible 1/4 x 1/4 bounding box boundary!`
 2. **TUYỆT ĐỐI CẤM MỌI DẠNG ĐƯỜNG KẺ & VIỀN Ô (NO BORDERS / NO GRID LINES / NO COMIC PANEL LINES)**:
    - `Strictly NO white lines, NO grid lines, NO black lines, NO comic panel borders, NO divider lines, NO box outlines, NO separator lines, NO numbers, NO text. All frames float freely in open space on one single seamless unbroken flat background`.
    - **CẤM DÙNG TỪ `"cell"` / `"each cell"` / `"per cell"` / `"grid box"` / `"Row 1, Row 2, Row 3"` HOẶC `"connects top-to-bottom"` TRONG PROMPT**: Từ `"cell"` hoặc mô tả tia sét chạm sát mép trên-dưới (`connects top-to-bottom`) kết hợp `"Row 1/2/3"` sẽ kích hoạt AI vẽ khung kẻ ô trắng như khung truyện tranh (comic panels)! Bắt buộc dùng `"Frames 1 to 3"`, `"self-contained and floating in open space"`, và `"never touches any edge"`.
