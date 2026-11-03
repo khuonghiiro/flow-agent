@@ -31,25 +31,28 @@ Tài liệu này là quy tắc bắt buộc áp dụng khi nhận yêu cầu t�
 
 ---
 
-## 3. Quy Tắc Tạo Độ Mượt Động Học, Chống Đơ Giật & Cấm "Bóng Hiệu Ứng Đứng Yên" (KINETIC FLUIDITY & ANTI-FROZEN-BASE LOCK)
+## 3. Quy Tắc Tạo Độ Mềm Dẻo Động Học & "Hiệu Ứng Bóng Mờ Chuyển Động" (SILKY MOTION-BLUR AFTERIMAGE & FLUID KINETIC RULES)
 
-> ⚠️ **2 LỖI NGHIÊM TRỌNG LÀM VÒNG XOÁY BỊ CỨNG NGẮC**:
-> 1. **Lỗi "Bóng Hiệu Ứng Đứng Yên" (`Frozen Shadow / Static Base Ring & Fixed Aura Curtain`)**: AI vẽ phần đế dưới (vành khung elip trắng cứng, lòng hố tối sẫm, hoặc bức rèm hào quang sọc thẳng đứng phía sau) **đứng im bất động như một cái khuôn đúc tĩnh ở cả 16 frames**, rồi chỉ dán đè 1 vệt sáng xoay bên trên. Khi ghép chạy animate, mắt người thấy cái bóng/khung nền đứng yên nên toàn bộ vòng xoáy có cảm giác **cứng ngắc, giả tạo**!
-> 2. **Lỗi "Kẹt Góc Xoay Giữa Các Frame Cùng Hàng" (`Stuck / Clustered Angles Across Frames`)**: Khi chỉ mô tả góc xoay theo từng hàng (Row 1, Row 2...), AI vẽ cả 4–6 frames liên tiếp có vệt sáng kẹt cứng ở cùng một góc (ví dụ bên phải), rồi đột ngột nhảy cóc sang góc đối diện ở hàng tiếp theo, làm vòng xoay bị khựng và giật!
+> ⚠️ **3 LỖI KHIẾN VÒNG XOÁY BỊ CỨNG NGẮC, KHÔ KHỐC HOẶC ĐƠ GIẬT**:
+> 1. **Lỗi "Thiếu Hiệu Ứng Bóng Mờ Chuyển Động" (`Missing Soft Motion-Blur Shadow / Hard Chalky Lines`)**: Nếu chỉ vẽ các nét xoáy sáng đặc, sắc cạnh mà **thiếu lớp bóng mờ bán trong suốt (`soft translucent motion-blur shadow / feathered afterimage trail / diffused misty glow`)** hoặc tự nhiên làm mất lớp bóng mờ ở một số frame (ví dụ Frame 6, 15, 16 tự nhiên mất hào quang mờ chỉ còn cái vòng trắng cứng), thì khi xoay nhìn sẽ **rất cứng, khô khốc, thiếu độ mềm dẻo uyển chuyển**!
+> 2. **Lỗi "Bóng Mờ Đứng Yên Không Cuốn Theo Xoáy" (`Frozen Static Backdrop Shadow`)**: Có vẽ lớp bóng mờ hào quang phía sau nhưng lại vẽ nó đứng im thẳng đơ như bức tường tĩnh ở cả 16 frames, không uốn lượn theo chiều xoay.
+> 3. **Lỗi "Kẹt Góc Xoay Giữa Các Frame Cùng Hàng" (`Stuck / Clustered Angles Across Frames`)**: Nhiều frame liên tiếp có vệt sáng kẹt ở cùng 1 góc rồi nhảy cóc sang góc khác.
 
-Để 16 frames ghép lại thành chuyển động **xoay cuộn mượt mà 100%, không có bất kỳ thành phần nào bị đứng yên**, prompt **BẮT BUỘC** phải áp dụng **5 Quy Luật Động Học Toàn Phần (`100% Full-Body Kinetic Motion`)**:
+Để 16 frames ghép lại thành chuyển động **vừa xoay mượt mà, vừa mềm dẻo uyển chuyển như lụa/nước phát sáng**, prompt **BẮT BUỘC** phải áp dụng **5 Quy Luật "Bóng Mờ Động Học Mềm Dẻo" (`5 Laws of Silky Motion-Blur Fluidity`)**:
 
-1. **TUYỆT ĐỐI CẤM Khung Viền Cứng & CẤM Bóng Nền Đứng Yên (`NO Rigid Outer Ring & NO Frozen Background Glow/Shadow`)**:
-   - **Cấm vẽ đường viền elip khép kín liền nét (`NO solid static oval outline ring`)**: Rìa ngoài của vòng xoáy phải được cấu thành **100% từ các dải lụa plasma rời nhau đang uốn lượn cuốn vào trong (`composed entirely of loose, overlapping, flowing S-curve plasma ribbons with jagged/feathered moving edges — ZERO static outer ring`)**. Khi các dải lụa xoay, bản thân hình dáng rìa ngoài cũng biến thiên mềm mại theo từng frame!
-   - **Cấm vẽ bóng hố đen tĩnh hoặc rèm hào quang tĩnh phía sau (`NO static vertical glow curtain, NO frozen dark shadow pit`)**: Tuyệt đối không vẽ một bức màn sọc sáng mờ đứng yên phía sau cổng. Toàn bộ lòng xoáy từ rìa vào tận tâm phải là **nhiều lớp cánh lốc xoáy sáng-tối đan vào nhau và cùng vặn xoắn ở mọi frame (`multi-layered churning pinwheel vortex bands twisting all the way to the core`)**.
-2. **Dùng Cấu Trúc Đa Cánh Xoáy Cuốn Đều (`Multi-Arm Pinwheel Spiral` — 3 đến 4 Cánh Xoáy Lốc)**:
-   - Không vẽ chỉ 1 vệt lưỡi liềm đơn độc trên nền tối (dễ gây cảm giác kẹt ở 1 bên). Phải mô tả **3 hoặc 4 cánh xoáy sáng rực (`3 or 4 interlocking bright spiral arms like a spinning galaxy/whirlpool pinwheel`)** phân bổ quanh tâm, để ở bất kỳ frame nào toàn bộ chu vi vòng xoáy đều đang cuộn chảy đồng bộ.
-3. **Chỉ Định Góc Quay Từng Frame Một (`Explicit Frame-by-Frame Clock Progression: Frame 1 -> Frame 16`)**:
-   - Không gom chung 4 frame vào 1 góc! Phải chỉ định góc tiến từng frame riêng biệt (`Frame 1 at 12:00, Frame 2 at 12:45, Frame 3 at 1:30, Frame 4 at 2:15...`) để ép AI vẽ mỗi frame nhích đi đúng `22.5°` theo chiều kim đồng hồ, tuyệt đối không có 2 frame liền kề nào giống góc nhau!
-4. **Luồng Xoắn Ốc Bốc Lên Thay Vì Tia Thẳng Đứng Tĩnh (`Helical Corkscrew Rising Streams`)**:
-   - Thay vì các tia thẳng đứng cứng đờ như hàng rào (dễ bị đứng yên giữa các frame), năng lượng thoát ra khỏi cổng phải là **các dải lụa sáng và hạt điện tích bay xoắn ốc nghiêng theo chiều quay (`helical corkscrewing energy ribbons and spiralling spark trails whipping diagonally in the direction of rotation`)**, mỗi frame bay lên và dịch sang vị trí mới.
-5. **Biến Đổi Hình Thái Liên Tục Đối Với Hiệu Ứng Nổ / Sét (`Continuous Morphological Evolution`)**:
-   - Với tia sét hoặc vụ nổ: Không bao giờ lặp lại cùng một nhánh sét hay cùng một đám nổ ở 2 frame liên tiếp. Mỗi frame nhánh sét phải giật sang đường gấp khúc mới, vòng sóng xung kích phải dãn rộng hơn kèm các mảnh tia lửa văng xa hơn theo quán tính vật lý.
+1. **BẮT BUỘC Có Lớp "Bóng Mờ Dư Ảnh & Hào Quang Sương Mờ" Ở CẢ 16/16 FRAMES (`Mandatory Soft Motion-Blur Afterimage & Diffused Mist Glow in All 16 Frames`)**:
+   - Mọi dải năng lượng xoáy **BẮT BUỘC phải có cấu trúc chuyển sắc 3 lớp mềm mại (Soft 3-Stage Feathering)**:
+     1. **Lõi lụa sáng (`Silky Bright Core`)**: Nét uốn mềm, vuốt nhọn hai đầu, không bao giờ vẽ thành vành khung trắng đặc cứng đờ.
+     2. **Đuôi bóng mờ dư ảnh chuyển động (`Soft Translucent Motion-Blur Afterimage / Ghosting Smear Trail`)**: Ngay phía sau mỗi cánh xoáy sáng phải kéo dài một **dải bóng mờ bán trong suốt màu xanh lam/cyan trầm (`semi-transparent deep cyan-blue motion-blur shadow trail`)** nhòe mềm theo quỹ đạo xoay, giúp nối liền khoảng cách thị giác giữa frame trước và frame sau.
+     3. **Hào quang sương mờ cuốn xoáy (`Swirling Diffused Volumetric Mist`)**: Phía trên và bao quanh vòng xoáy phải luôn có lớp **bóng mờ hào quang khuếch tán mềm mịn như sương khói phát sáng (`soft airbrushed volumetric glow and translucent rising mist`)** hiện diện **đồng nhất xuyên suốt từ Frame 1 đến Frame 16** (tuyệt đối CẤM để các frame cuối như Frame 15–16 bị mất lớp bóng mờ này!).
+2. **Lớp Bóng Mờ Phải Uốn Cong Mềm Dẻo Theo Lực Xoáy (`Curved Swirling Shadow — Never Static Vertical, Never Rigid`)**:
+   - Lớp bóng mờ và làn sương sáng bốc lên từ cổng **không được dựng thẳng đứng bất động**, mà phải **nghiêng lượn, uốn cong chữ S và cuộn xoắn mềm mại theo đúng chiều gió lốc của vòng xoáy ở từng frame (`softly curving, leaning, and swirling clockwise with the vortex momentum like silk veil in water`)**.
+3. **Cấm Vẽ Vành Khung Elip Đặc Cứng (`NO Hard-Edged Solid Chalky Ring`)**:
+   - Tuyệt đối không vẽ một đường viền elip trắng đặc khép kín cứng nhắc như cái đĩa nhựa. Toàn bộ vòng xoáy phải mềm mại như những dải lụa khói ánh sáng đan quyện vào nhau với biên mờ mịn (`soft feathered airbrushed edges`).
+4. **Chỉ Định Góc Quay Đều Đặn Từng Frame (`Explicit 22.5° Clockwise Step Per Frame`)**:
+   - Các dải lụa sáng và đuôi bóng mờ phía sau chúng phải nhích đều `22.5°` theo chiều kim đồng hồ ở mỗi frame kế tiếp (`Frame 1 at 0°, Frame 2 at 22.5°, Frame 3 at 45°... Frame 16 at 337.5°`), không để 2 frame liên tiếp bị trùng góc.
+5. **Biến Đổi Hình Thái Liên Tục Đối Với Hiệu Ứng Nổ / Sét (`Continuous Morphological Evolution with Soft Glow Afterimage`)**:
+   - Ngay cả với tia sét hay vụ nổ, xung quanh lõi sét/lõi nổ cũng phải có **quầng bóng mờ hào quang mềm (`soft diffused plasma bloom & fading afterimage shadow`)** để chuyển động nổ và giật sét có độ êm và chiều sâu quang học.
 
 ---
 

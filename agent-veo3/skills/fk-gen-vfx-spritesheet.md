@@ -30,7 +30,7 @@ Kỹ năng này kết hợp trực tiếp với rule `.agents/rules/vfx_animatio
 
 ## 2. Bộ Mẫu Prompt Chuẩn Cho Chuỗi Cổng Dịch Chuyển 3 Tấm (Mặt Đất - Nền Đen `#000000` Hoặc Tùy Chọn)
 
-### Tấm 1: Pha Khởi Tạo & Mở Cổng (`Sheet 1 of 3: Portal Ignition & Opening To Full Size`)
+### Tấm 1: Pha Khởi Tạo & Mở Cổng (`Sheet 1 of 3: Portal Ignition & Opening To Full Size — Silky Motion-Blur Shadow Edition`)
 ```text
 A borderless square 1:1 animation sprite sheet containing exactly 16 sequential hand-drawn animation frames of PHASE 1 ONLY (IGNITION AND OPENING EXPANSION) of a ground-level dimensional warp portal, floating freely on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
 
@@ -39,20 +39,21 @@ CRITICAL BACKGROUND & ZERO-BORDER CONSTRAINTS:
 - Strictly NO grid lines, NO borders, NO divider lines, NO box outlines, NO text, NO numbers. All 16 frames float freely in open space with 30% empty black margin around every frame.
 
 CRITICAL HUMAN-EYE GROUND PERSPECTIVE & 4:1 FLAT ELLIPSE LOCK:
-- Viewed from a fixed low grazing human eye angle (~15 degrees above an invisible floor).
-- Every single frame MUST be a VERY FLAT PANCAKE HORIZONTAL ELLIPSE (strictly 4:1 width-to-height ratio) lying flat on the invisible floor. STRICTLY FORBIDDEN to draw a round 1:1 front-facing circle in any frame.
-- The bottom/front rim is thicker and brighter white-cyan; compact flickering vertical light rays and spiralling sparks rise straight UPWARD (90 degrees vertical) from the flat ring.
+- Viewed from a fixed low grazing human eye angle (~15 degrees above an invisible floor): every single frame MUST be a VERY FLAT PANCAKE HORIZONTAL ELLIPSE (strictly 4:1 width-to-height ratio) lying flat on the invisible floor. STRICTLY FORBIDDEN to draw a round 1:1 front-facing circle in any frame.
 
-CRITICAL KINETIC FLUIDITY & CONTINUITY HANDSHAKE (END AT 100% OPEN — DO NOT CLOSE!):
-- Every consecutive frame MUST show active clockwise vortex rotation (+22.5 degrees angular shift per frame) with whipping S-curve plasma arms, curved rotational motion-blur streaks, and orbiting energy sparks shifting position around the elliptical rim.
-- Frame-by-frame progression (16 frames of smooth opening ONLY):
-  - Frames 1 to 4 (Crack & Spark Ignition): A horizontal electric spark cracks open into a tiny swirling 4:1 flat horizontal ellipse, throwing off initial upward sparks as the bright spiral arm sweeps from 12 o'clock to 3 o'clock.
-  - Frames 5 to 8 (Accelerating Swirl Expansion): The flat 4:1 horizontal vortex spins rapidly clockwise (spiral arm sweeping 3 o'clock to 6 o'clock), growing to 50% width with whipping plasma ribbons and dancing upward light rays of alternating heights.
-  - Frames 9 to 12 (Surging Vortex Widening): The flat 4:1 horizontal ellipse expands from 60% to 85% width as the spiral arm sweeps from 6 o'clock to 9 o'clock, shedding swirling trails and rising plasma motes.
-  - Frames 13 to 16 (Reaching 100% Full Open Aperture - STAY OPEN!): The flat 4:1 horizontal ground portal reaches its full 100% maximum width and stabilizes into a fiercely spinning open vortex in Frame 16 (spiral arm completing sweep to 12 o'clock). CRITICAL: Frame 16 MUST REMAIN 100% FULLY OPEN AND LARGE to connect seamlessly into Sheet 2! Strictly DO NOT shrink or close in frames 13-16!
+CRITICAL SILKY MOTION-BLUR SHADOW & ETHEREAL MIST IN ALL 16 FRAMES (NO HARD CHALKY RINGS!):
+- EVERY SINGLE FRAME from Frame 1 through Frame 16 (strictly including Frames 6, 12, 15, and 16!) MUST feature a rich, soft, semi-transparent cyan-blue MOTION-BLUR AFTERIMAGE SHADOW TRAIL and a Swirling Diffused Ethereal Mist Glow rising and curving smoothly with the vortex rotation!
+- STRICTLY FORBIDDEN to drop or lose the soft glowing mist shadow in Frames 15 and 16! STRICTLY FORBIDDEN to draw hard-edged solid chalky white rings! Every spiral ribbon has soft airbrushed feathered edges blending smoothly into its trailing translucent cyan-blue motion-blur shadow, giving the spinning vortex a supple, silky, liquid-smooth feel.
+
+CRITICAL KINETIC FLUIDITY & CONTINUITY HANDSHAKE (END AT 100% OPEN IN FRAME 16 WITH FULL MISTY GLOW!):
+- Frame-by-frame progression (16 frames of smooth silky opening ONLY):
+  - Frames 1 to 4 (Crack & Misty Spark Ignition): A horizontal electric spark cracks open into a small swirling 4:1 flat horizontal ellipse wrapped in soft translucent cyan motion-blur mist as the silky spiral ribbons sweep clockwise from 12 o'clock to 3 o'clock.
+  - Frames 5 to 8 (Accelerating Silky Swirl Expansion): The flat 4:1 horizontal vortex spins clockwise (sweeping 3 o'clock to 6 o'clock), growing to 55% width with soft feathered plasma ribbons, trailing motion-blur ghost shadows, and swirling upward mist veil.
+  - Frames 9 to 12 (Surging Vortex Widening): The flat 4:1 horizontal ellipse expands from 65% to 88% width (sweeping 6 o'clock to 9 o'clock) with continuous soft volumetric mist glow and curving motion-blur afterimage trails in every frame.
+  - Frames 13 to 16 (Reaching 100% Full Open Aperture - KEEP FULL SOFT MOTION-BLUR MIST GLOW IN FRAMES 15 & 16!): The flat 4:1 horizontal ground portal reaches 100% full width in Frames 13-16 while maintaining the EXACT SAME rich, soft rising ethereal mist glow and silky motion-blur shadow trails as Frames 7-14 (strictly NO bare hard rings in Frames 15-16!).
 ```
 
-### Tấm 2: Pha Duy Trì Vòng Xoáy Liên Tục (`Sheet 2 of 3: Continuous Active Spinning Loop at 100% Full Size — Anti-Frozen-Base Edition`)
+### Tấm 2: Pha Duy Trì Vòng Xoáy Liên Tục (`Sheet 2 of 3: Continuous Active Spinning Loop at 100% Full Size — Silky Motion-Blur Shadow Edition`)
 ```text
 A borderless square 1:1 animation sprite sheet containing exactly 16 sequential hand-drawn 2D anime VFX animation frames of PHASE 2 (SEAMLESS CONTINUOUS 360-DEGREE SPINNING VORTEX LOOP AT CONSTANT FULL SIZE) of a ground-level dimensional warp portal, floating freely on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
 
@@ -60,15 +61,15 @@ CRITICAL BACKGROUND & ZERO-BORDER CONSTRAINTS:
 - Background: 100% solid flat uniform pure pitch-black #000000 everywhere, no grid lines, no borders, no divider lines, no box outlines, no text. 30% empty black safety margin around every frame.
 
 CRITICAL HUMAN-EYE LOW GRAZING GROUND PERSPECTIVE (STRICT 4:1 PANCAKE-FLAT HORIZONTAL ELLIPSE):
-- Viewed from a very low grazing human eye angle (~12 to 15 degrees above an invisible floor): ALL 16 FRAMES MUST be compressed into a VERY FLAT, WIDE PANCAKE HORIZONTAL ELLIPSE (strictly 4:1 width-to-height ratio — four times wider horizontally than its vertical height!).
+- Viewed from a very low grazing human eye angle (~15 degrees above an invisible floor): ALL 16 FRAMES MUST be compressed into a VERY FLAT, WIDE PANCAKE HORIZONTAL ELLIPSE (strictly 4:1 width-to-height ratio — four times wider horizontally than its vertical height!).
 - STRICTLY FORBIDDEN to draw a tall oval or a round circle in any frame! All 16 frames maintain the exact same wide, flat 4:1 horizontal floor-saucer shape.
 
-CRITICAL ANTI-FROZEN-BASE & 100% FLUID TURBULENCE LOCK (NO STATIC SHADOW CURTAIN OR RIGID RING!):
-- STRICTLY FORBIDDEN to draw a static vertical background glow curtain or frozen ambient shadow backdrop behind the portal! There is NO vertical wall of light standing still behind the ellipse.
-- STRICTLY FORBIDDEN to draw a rigid unbroken static white oval outline ring! Instead, the flat 4:1 horizontal vortex is made 100% of loose, overlapping, whipping S-curve cyan-white plasma ribbons, churning interior spiral bands, and diagonal corkscrewing spark trails whipping around the flat horizontal rim.
+CRITICAL SILKY MOTION-BLUR AFTERIMAGE SHADOW & SWIRLING MIST GLOW (SOFT & SUPPLE, NEVER HARD-EDGED!):
+- To make the rotation look supple, fluid, and silky-smooth (NEVER stiff or hard-edged), every swirling plasma ribbon MUST be accompanied by a SOFT, SEMI-TRANSPARENT CYAN-BLUE MOTION-BLUR AFTERIMAGE SHADOW TRAIL (hiệu ứng bóng mờ dư ảnh chuyển động) and a soft airbrushed volumetric mist aura that curves and leans smoothly along the clockwise vortex flow!
+- STRICTLY FORBIDDEN to draw hard, sharp, dry chalky lines without soft motion-blur shadow! Every bright spiral wave blends smoothly into a feathered, misty cyan-blue ghosting trail and soft swirling upward vapor glow in all 16 frames.
 
 CRITICAL 360-DEGREE FRAME-BY-FRAME CLOCKWISE ROTATION:
-- Three prominent whipping white-cyan plasma spiral ribbons and their trailing spark streams visibly rotate clockwise around the flat 4:1 horizontal disc by 22.5 degrees in every single frame (Frame 1 at 0°, Frame 2 at 22.5°, Frame 3 at 45°, Frame 4 at 67.5° ... through Frame 16 at 337.5°), so the entire flat horizontal whirlpool churns continuously with zero frozen shadow and zero stuck frames!
+- Silky white-cyan plasma spiral waves and their soft translucent motion-blur shadow trails visibly rotate clockwise around the flat 4:1 horizontal disc by 22.5 degrees in every single frame (Frame 1 at 0°, Frame 2 at 22.5°, Frame 3 at 45°, Frame 4 at 67.5° ... through Frame 16 at 337.5°), creating a soft, elastic, seamlessly flowing whirlpool!
 ```
 
 ### Tấm 3: Pha Thu Hẹp & Đóng Cổng (`Sheet 3 of 3: Vortex Collapse & Dissipation From Full Size`)
