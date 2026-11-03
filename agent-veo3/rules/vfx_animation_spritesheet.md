@@ -4,11 +4,18 @@ Tài liệu này là quy tắc bắt buộc áp dụng khi nhận yêu cầu t�
 
 ---
 
-## 1. Định dạng tiêu chuẩn: Lưới 1:1 với 16 Frames (Standard 4x4 Grid)
+## 1. Quy Tắc Chọn Tỉ Lệ Khung Ảnh (`16:9` / `9:16` / `1:1`) & Lưới (`4×4 = 16 Frames` hoặc `3×3 = 9 Frames`) Theo Hình Thái Kéo Rộng / Kéo Cao Của Hiệu Ứng
 
-- **Tỉ lệ ảnh tổng thể**: `1:1` (`IMAGE_ASPECT_RATIO_SQUARE`).
-- **Bố cục lưới**: Chính xác 16 frames riêng biệt, xếp thành 4 hàng × 4 cột (thứ tự đọc: từ trái sang phải, từ trên xuống dưới).
-- **Phân bổ không gian**: Mỗi frame chiếm 1 vùng không gian 1/4 × 1/4 của bức ảnh, trôi nổi tự do trên nền phẳng liền mạch.
+> 💡 **NGUYÊN LÝ HÌNH HỌC CỐT LÕI**: Khi chia bức ảnh thành lưới có số hàng bằng số cột (`4×4 = 16 frames` hoặc `3×3 = 9 frames`), **tỉ lệ khung của từng ô frame con sẽ BẰNG ĐÚNG tỉ lệ khung của bức ảnh tổng thể (`16:9`, `9:16`, hoặc `1:1`)**!
+> Do đó, thay vì luôn ép mọi hiệu ứng vào khung `1:1`, **BẮT BUỘC chọn tỉ lệ khung hình và kích thước lưới dựa theo chiều kéo rộng (ngang) hay kéo cao (dọc) của hiệu ứng** (đặc biệt ở **Pha Xoáy Lặp 360° / Full Size** trong chuỗi 3 tấm nối tiếp, hoặc các hiệu ứng thẳng đứng như Tia Sét):
+
+| Hình Thái Không Gian Của Hiệu Ứng | Tỉ Lệ Khung Ảnh (`aspect_ratio`) | Bố Cục Lưới Chuẩn (`Grid Layout`) | Ứng Dụng Cụ Thể Trong Chuỗi Hoạt Ảnh |
+|---|---|---|---|
+| **1. Hiệu Ứng Kéo Rộng Ngang (`Horizontal / Wide-Span VFX`)** | **`16:9` (`IMAGE_ASPECT_RATIO_LANDSCAPE`)** | **`4 hàng × 4 cột = 16 Frames`** (hoặc `3×3 = 9 Frames`) | - **Cổng Dịch Chuyển Mặt Đất (`Ground Portal`) & Trên Trời (`Sky Portal`)** (elip dẹt ngang `3.5:1 – 4:1`) trong chuỗi **3 Tấm Nối Tiếp (`Mở Cổng → Xoáy Lặp 360° → Đóng Cổng`)**: Khi xoáy lặp 360° ở kích thước mở cực đại, cổng kéo rộng theo phương ngang nên dùng `16:9` giúp mỗi ô frame là một hình chữ nhật ngang rộng rãi, vòng xoáy và bóng mờ bung hết cỡ không bị bó hẹp.<br>- **Sóng xung kích mặt đất (`Ground Shockwave`)**, vệt chém ngang (`Horizontal Slash`). |
+| **2. Hiệu Ứng Kéo Cao Thẳng Đứng (`Vertical / Tall-Span VFX`)** | **`9:16` (`IMAGE_ASPECT_RATIO_PORTRAIT`)** | - **`3 hàng × 3 cột = 9 Frames` (`3×3 Grid`)** cho **Tia Sét / Cột Sáng thẳng đứng**.<br>- **`4×4 (16 Frames)` hoặc `3×3 (9 Frames)`** cho **Cổng Dọc Trái/Phải**. | - **Tia Sét Giáng Thẳng Đứng (`Vertical Lightning Strike`), Cột Sáng, Lốc Xoáy Cao**: Dùng **`9:16` với lưới `3 hàng × 3 cột (9 frames)`** giúp mỗi frame là một ô chữ nhật đứng cao vút và rộng rãi (diện tích lớn gấp ~1.8 lần ô `4×4`), tia sét phóng dài từ đỉnh trời xuống mặt đất không bị cụt lủn.<br>- **Cổng Dịch Chuyển Hướng Bên Trái / Bên Phải (`Left/Right Vertical Portal 1:4`)** khi xoáy lặp 360° kéo cao theo chiều dọc → dùng **`9:16`**. |
+| **3. Hiệu Ứng Tròn Đều Đối Xứng Tâm (`Radial / Symmetrical VFX`)** | **`1:1` (`IMAGE_ASPECT_RATIO_SQUARE`)** | **`4 hàng × 4 cột = 16 Frames`** (hoặc `3×3 = 9 Frames`) | - **Cổng Dịch Chuyển Chính Diện (`Direct Front 0° Circle`)**, Quả cầu năng lượng (`Energy Orb`), Khiên tròn, Vụ nổ tâm cầu đối xứng 360°. |
+
+- **Lưu ý đồng bộ trong Chuỗi 3 Tấm (`Mở Cổng → Xoáy Lặp 360° → Đóng Cổng`)**: Nếu hiệu ứng ở pha **Xoáy Lặp 360°** kéo rộng ngang (`16:9`) hoặc kéo cao dọc (`9:16`), khuyến nghị dùng **cùng tỉ lệ `16:9` (hoặc `9:16`) cho cả 3 tấm Mở → Xoáy Lặp → Đóng** để khi cắt frame ghép nối tiếp giữa Tấm 1, Tấm 2 và Tấm 3, kích thước khung hình từng frame khớp nhau 100% không bị lệch tỉ lệ.
 
 ---
 
@@ -64,7 +71,12 @@ Tài liệu này là quy tắc bắt buộc áp dụng khi nhận yêu cầu t�
 
 Vì vậy, khi tạo hiệu ứng có vòng đời đầy đủ hoặc có chuỗi nhân quả liên hoàn, **BẮT BUỘC phải chia thành CHUỖI CÁC TẤM SPRITE SHEET NỐI TIẾP NHAU (`Multi-Sheet Sequential Chain`)**, trong đó **Frame 16 của Tấm trước khớp nối trực tiếp với Frame 1 của Tấm sau**:
 
-### 4.1. Mẫu Chuỗi 1: Hiệu Ứng Cổng Dịch Chuyển / Vòng Ma Pháp / Khiên Năng Lượng (Chuỗi 3 Tấm Nối Tiếp — 48 Frames)
+### 4.1. Mẫu Chuỗi 1: Hiệu Ứng Cổng Dịch Chuyển / Vòng Ma Pháp / Khiên Năng Lượng (Chuỗi 3 Tấm Nối Tiếp — Tùy Biến `16:9` / `9:16` / `1:1` Theo Hướng Kéo Rộng Hoặc Kéo Cao)
+
+> 💡 **QUY TẮC CHỌN TỈ LỆ KHUNG HÌNH CHO CHUỖI 3 TẤM (ĐẶC BIỆT Ở PHA XOÁY LẶP 360°)**:
+> - Nếu vòng xoáy **kéo rộng theo phương ngang** (như **Cổng Mặt Đất** hoặc **Cổng Trên Trời** dạng elip ngang `3.5:1 – 4:1`) → Dùng tỉ lệ **`16:9` (`IMAGE_ASPECT_RATIO_LANDSCAPE`)** để khung mỗi frame trải rộng ngang khớp với biên độ vòng xoáy.
+> - Nếu vòng xoáy **kéo cao theo phương thẳng đứng** (như **Cổng Bên Trái / Bên Phải** dạng elip đứng `1:4`, hoặc cột lốc xoáy dọc) → Dùng tỉ lệ **`9:16` (`IMAGE_ASPECT_RATIO_PORTRAIT`)**.
+> - Nếu vòng xoáy **tròn đều đối xứng tâm** (như **Cổng Chính Diện `0°`**) → Dùng tỉ lệ **`1:1` (`IMAGE_ASPECT_RATIO_SQUARE`)**.
 
 | Thứ Tự Tấm (Sheet) | Vai Trò Trong Chuỗi Hoạt Ảnh | Diễn Biến Chi Tiết Xuyên Suốt 16 Frames Của Tấm Đó | Quy Tắc Khớp Nối Giữa Các Tấm (Continuity Handshake) |
 |---|---|---|---|
@@ -72,7 +84,10 @@ Vì vậy, khi tạo hiệu ứng có vòng đời đầy đủ hoặc có chu�
 | **Tấm 2 (`Sheet 2: Active Spinning Loop`)** | **Pha Duy Trì Xoáy Liên Tục Vô Tận** (16 frames Seamless Loop ở kích thước mở 100%) | - **Tất cả 16 frames (Frames 1–16)** đều giữ nguyên **kích thước mở 100% (Full Aperture)** từ Frame 16 của Tấm 1 (không phóng to, không thu nhỏ!).<br>- Cánh xoáy plasma bên trong, các lưỡi năng lượng quanh viền và các tia sáng **xoay tròn liên tục 1 vòng 360° qua 16 frames** (`Frame 1 = 0°`, `Frame 5 = 90°`, `Frame 9 = 180°`, `Frame 13 = 270°`, `Frame 16 = 337.5°` nối khít về `Frame 1`). | Khớp hoàn hảo với cuối Tấm 1 và đầu Tấm 3. Có thể lặp (loop) Tấm 2 vô hạn lần trong phim/game mà không bao giờ bị khựng hay ngắt nhịp! |
 | **Tấm 3 (`Sheet 3: Collapse / Closure`)** | **Pha Thu Hẹp & Đóng Cổng Tan Biến** (16 frames chỉ dành riêng cho việc đóng cổng mượt mà) | - **Frame 1**: Bắt đầu ngay ở trạng thái **Cổng đang mở to 100% (Full Aperture)** nối tiếp từ Tấm 2.<br>- **Frames 2–11**: Vòng xoáy hút ngược vào tâm, tốc độ xoay cuốn nhanh dần, kích thước thu hẹp mượt mà từng nấc nhỏ.<br>- **Frames 12–15**: Khép sập lại thành vệt chớp sáng lóe lên và bung các hạt bụi sáng tản ra.<br>- **Frame 16**: Tan biến hoàn toàn 100% về màu nền phẳng. | Nối tiếp mượt mà ngay sau khi kết thúc vòng lặp của Tấm 2. |
 
-### 4.2. Mẫu Chuỗi 2: Hiệu Ứng Tác Động Liên Hoàn Nhân Quả (Ví dụ: Sét Đánh Xuống Đất → Nổ Xung Kích Mặt Đất — Chuỗi 2 Tấm Nối Tiếp)
+### 4.2. Mẫu Chuỗi 2: Hiệu Ứng Tác Động Liên Hoàn Nhân Quả (Ví dụ: Sét Đánh Thẳng Đứng `9:16` 3×3 (9 Frames) → Nổ Xung Kích Mặt Đất `16:9` / `9:16`)
+
+> 💡 **QUY TẮC TỐI ƯU CHO TIA SÉT THẲNG ĐỨNG (`VERTICAL LIGHTNING`)**:
+> - Tia sét đánh từ trên trời xuống mặt đất có hình thái **kéo cao thẳng đứng**, vì vậy dùng tỉ lệ **`9:16` (`IMAGE_ASPECT_RATIO_PORTRAIT`) kết hợp lưới `3 hàng × 3 cột = 9 Frames` (`3×3 Grid`)** là chuẩn xác nhất: mỗi frame có khung hình chữ nhật đứng `9:16` cao thoáng, giúp thân sét vươn dài từ đỉnh xuống đáy mà không bị ép lùn, đồng thời 9 frames khớp hoàn hảo với nhịp giật sét tốc độ cao.
 
 | Thứ Tự Tấm (Sheet) | Vai Trò Trong Chuỗi Hoạt Ảnh | Diễn Biến Chi Tiết Xuyên Suốt 16 Frames Của Tấm Đó | Quy Tắc Khớp Nối Giữa Các Tấm (Continuity Handshake) |
 |---|---|---|---|

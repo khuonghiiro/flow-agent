@@ -18,101 +18,111 @@ Kỹ năng này kết hợp trực tiếp với rule `.agents/rules/vfx_animatio
 
 ---
 
-## 1. Quy Tắc Màu Nền Linh Hoạt (Không Cố Định Tím/Xanh Lá)
+## 1. Quy Tắc Chọn Tỉ Lệ Khung Ảnh (`16:9` / `9:16` / `1:1`), Lưới (`4×4` hoặc `3×3`) & Màu Nền Linh Hoạt
 
+### 1.1. Chọn Tỉ Lệ Khung Hình & Bố Cục Lưới Theo Chiều Kéo Rộng / Kéo Cao Của Hiệu Ứng
+- **Hiệu ứng kéo rộng ngang** (như **Cổng Dịch Chuyển Mặt Đất / Trên Trời** elip dẹt ngang `3.5:1 – 4:1` trong chuỗi `Mở Cổng → Xoáy Lặp 360° → Đóng Cổng`, hoặc Sóng xung kích mặt đất):
+  - **`aspect_ratio`**: `IMAGE_ASPECT_RATIO_LANDSCAPE` (`16:9`).
+  - **Lưới**: `4 hàng × 4 cột = 16 frames` (hoặc `3×3 = 9 frames`). Khung `16:9` giúp mỗi ô frame con có bề ngang rộng rãi, vòng xoáy ngang và lớp bóng mờ sương khói bung hết cỡ mà không bị bó hẹp.
+- **Hiệu ứng kéo cao thẳng đứng** (như **Tia Sét Giáng Thẳng Đứng**, Cột Sáng, hoặc **Cổng Dịch Chuyển Bên Trái / Bên Phải** elip dựng đứng `1:4`):
+  - **`aspect_ratio`**: `IMAGE_ASPECT_RATIO_PORTRAIT` (`9:16`).
+  - **Lưới**: Với **Tia Sét Thẳng Đứng**, ưu tiên dùng **`3 hàng × 3 cột = 9 frames` (`3×3 Grid`)** để mỗi frame có chiều cao vút `9:16` và bề ngang thoáng đãng; với Cổng Dọc Trái/Phải có thể dùng `4×4 (16 frames)` hoặc `3×3 (9 frames)`.
+- **Hiệu ứng tròn đều đối xứng tâm** (như **Cổng Chính Diện `0°`**, Quả cầu năng lượng):
+  - **`aspect_ratio`**: `IMAGE_ASPECT_RATIO_SQUARE` (`1:1`), lưới `4×4 = 16 frames`.
+
+### 1.2. Chọn Màu Nền Linh Hoạt Không Trùng Chi Tiết
 - **KHÔNG bắt buộc dùng nền Tím (`#FF00FF`) hay Xanh lá (`#00FF00`)**.
 - Được phép chọn **bất kỳ màu nền phẳng đơn sắc nào** (ví dụ: Đen tuyền `#000000`, Than chì tối `#141414`, Xanh đêm `#0A0E1A`, Đỏ rượu sẫm `#2A0510`, v.v.) **MIỄN LÀ**:
   1. Màu nền đó **không trùng với bất kỳ màu chi tiết nào của hiệu ứng**.
-  2. Nền phẳng 100% không viền ô, không kẻ lưới (tuyệt đối không dùng từ `"cell"` trong prompt).
+  2. Nền phẳng 100% không viền ô, không kẻ lưới, không bàn cờ (`strictly NO checkerboard pattern`, tuyệt đối không dùng từ `"cell"` trong prompt).
   3. Các tấm trong cùng 1 chuỗi nối tiếp dùng chung cùng 1 mã màu nền.
 
 ---
 
-## 2. Bộ Mẫu Prompt Chuẩn Cho Chuỗi Cổng Dịch Chuyển 3 Tấm (Mặt Đất - Nền Đen `#000000` Hoặc Tùy Chọn)
+## 2. Bộ Mẫu Prompt Chuẩn Cho Chuỗi Cổng Dịch Chuyển Mặt Đất 3 Tấm — Tỉ Lệ `16:9` (`IMAGE_ASPECT_RATIO_LANDSCAPE`)
 
-### Tấm 1: Pha Khởi Tạo & Mở Cổng (`Sheet 1 of 3: Portal Ignition & Opening To Full Size — Silky Motion-Blur Shadow Edition`)
+### Tấm 1: Pha Khởi Tạo & Mở Cổng (`Sheet 1 of 3: Portal Ignition & Opening To Full Size — 16:9 Landscape, Silky Motion-Blur Shadow`)
 ```text
-A borderless square 1:1 animation sprite sheet containing exactly 16 sequential hand-drawn animation frames of PHASE 1 ONLY (IGNITION AND OPENING EXPANSION) of a ground-level dimensional warp portal, floating freely on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
+A borderless widescreen 16:9 animation sprite sheet containing exactly 16 sequential hand-drawn 2D anime VFX animation frames of PHASE 1 ONLY (IGNITION AND OPENING EXPANSION) of a ground-level dimensional warp portal, floating freely on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
 
 CRITICAL BACKGROUND & ZERO-BORDER CONSTRAINTS:
-- Background: 100% solid flat uniform pure pitch-black #000000 everywhere, no gradient, no floor texture, no horizon line.
+- Background: 100% solid flat uniform pure pitch-black #000000 everywhere, strictly NO checkerboard pattern, no gradient, no floor texture, no horizon line.
 - Strictly NO grid lines, NO borders, NO divider lines, NO box outlines, NO text, NO numbers. All 16 frames float freely in open space with 30% empty black margin around every frame.
 
-CRITICAL HUMAN-EYE GROUND PERSPECTIVE & 4:1 FLAT ELLIPSE LOCK:
-- Viewed from a fixed low grazing human eye angle (~15 degrees above an invisible floor): every single frame MUST be a VERY FLAT PANCAKE HORIZONTAL ELLIPSE (strictly 4:1 width-to-height ratio) lying flat on the invisible floor. STRICTLY FORBIDDEN to draw a round 1:1 front-facing circle in any frame.
+CRITICAL HUMAN-EYE GROUND PERSPECTIVE & WIDE HORIZONTAL VORTEX LOCK:
+- Viewed from a fixed low grazing human eye angle (~15 degrees above an invisible floor): every single frame MUST be a wide flat horizontal swirling whirlpool (3.5:1 width-to-height ratio) lying flat on the invisible floor inside its widescreen 16:9 frame space. STRICTLY FORBIDDEN to draw a round 1:1 front-facing circle in any frame.
 
 CRITICAL SILKY MOTION-BLUR SHADOW & ETHEREAL MIST IN ALL 16 FRAMES (NO HARD CHALKY RINGS!):
-- EVERY SINGLE FRAME from Frame 1 through Frame 16 (strictly including Frames 6, 12, 15, and 16!) MUST feature a rich, soft, semi-transparent cyan-blue MOTION-BLUR AFTERIMAGE SHADOW TRAIL and a Swirling Diffused Ethereal Mist Glow rising and curving smoothly with the vortex rotation!
-- STRICTLY FORBIDDEN to drop or lose the soft glowing mist shadow in Frames 15 and 16! STRICTLY FORBIDDEN to draw hard-edged solid chalky white rings! Every spiral ribbon has soft airbrushed feathered edges blending smoothly into its trailing translucent cyan-blue motion-blur shadow, giving the spinning vortex a supple, silky, liquid-smooth feel.
+- EVERY SINGLE FRAME from Frame 1 through Frame 16 (strictly including Frames 6, 12, 15, and 16!) MUST feature soft feathered plasma ribbons, trailing soft cyan-blue MOTION-BLUR AFTERIMAGE SHADOW TRAILS, and a Swirling Diffused Ethereal Mist Glow rising and curving smoothly with the vortex rotation!
+- STRICTLY FORBIDDEN to drop or lose the soft glowing mist shadow in Frames 15 and 16! STRICTLY FORBIDDEN to draw bare empty rings or hard-edged solid chalky white outer ring outlines!
 
 CRITICAL KINETIC FLUIDITY & CONTINUITY HANDSHAKE (END AT 100% OPEN IN FRAME 16 WITH FULL MISTY GLOW!):
 - Frame-by-frame progression (16 frames of smooth silky opening ONLY):
-  - Frames 1 to 4 (Crack & Misty Spark Ignition): A horizontal electric spark cracks open into a small swirling 4:1 flat horizontal ellipse wrapped in soft translucent cyan motion-blur mist as the silky spiral ribbons sweep clockwise from 12 o'clock to 3 o'clock.
-  - Frames 5 to 8 (Accelerating Silky Swirl Expansion): The flat 4:1 horizontal vortex spins clockwise (sweeping 3 o'clock to 6 o'clock), growing to 55% width with soft feathered plasma ribbons, trailing motion-blur ghost shadows, and swirling upward mist veil.
-  - Frames 9 to 12 (Surging Vortex Widening): The flat 4:1 horizontal ellipse expands from 65% to 88% width (sweeping 6 o'clock to 9 o'clock) with continuous soft volumetric mist glow and curving motion-blur afterimage trails in every frame.
-  - Frames 13 to 16 (Reaching 100% Full Open Aperture - KEEP FULL SOFT MOTION-BLUR MIST GLOW IN FRAMES 15 & 16!): The flat 4:1 horizontal ground portal reaches 100% full width in Frames 13-16 while maintaining the EXACT SAME rich, soft rising ethereal mist glow and silky motion-blur shadow trails as Frames 7-14 (strictly NO bare hard rings in Frames 15-16!).
+  - Frames 1 to 4 (Crack & Misty Spark Ignition): A horizontal electric spark cracks open into a small swirling flat horizontal ellipse wrapped in soft glowing cyan motion-blur mist as the silky spiral ribbons sweep clockwise from 12 o'clock to 3 o'clock.
+  - Frames 5 to 8 (Accelerating Silky Swirl Expansion): The flat horizontal vortex spins clockwise (sweeping 3 o'clock to 6 o'clock), growing to 55% width with soft feathered plasma ribbons, trailing motion-blur ghost shadows, and swirling upward mist veil.
+  - Frames 9 to 12 (Surging Vortex Widening): The flat horizontal ellipse expands from 65% to 88% width (sweeping 6 o'clock to 9 o'clock) with continuous soft volumetric mist glow and curving motion-blur afterimage trails in every frame.
+  - Frames 13 to 16 (Reaching 100% Full Open Aperture - KEEP FULL SOFT MOTION-BLUR MIST GLOW IN FRAMES 15 & 16!): The flat horizontal ground portal reaches 100% full width in Frames 13-16 while maintaining the EXACT SAME rich, soft rising ethereal mist glow and silky motion-blur shadow trails as Frames 7-14 (strictly NO bare hard rings in Frames 15-16!).
 ```
 
-### Tấm 2: Pha Duy Trì Vòng Xoáy Liên Tục (`Sheet 2 of 3: Continuous Active Spinning Loop at 100% Full Size — Silky Motion-Blur Shadow Edition`)
+### Tấm 2: Pha Duy Trì Vòng Xoáy Liên Tục (`Sheet 2 of 3: Continuous Active Spinning Loop at 100% Full Size — 16:9 Landscape, Silky Motion-Blur Shadow`)
 ```text
-A borderless square 1:1 animation sprite sheet containing exactly 16 sequential hand-drawn 2D anime VFX animation frames of PHASE 2 (CONTINUOUS SPINNING VORTEX LOOP AT CONSTANT FULL SIZE) of a ground-level dimensional warp portal, floating freely on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
+A borderless widescreen 16:9 animation sprite sheet containing exactly 16 sequential hand-drawn 2D anime VFX animation frames of PHASE 2 (CONTINUOUS SPINNING VORTEX LOOP AT CONSTANT FULL SIZE) of a ground-level dimensional warp portal, floating freely on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
 
 CRITICAL BACKGROUND & ZERO-BORDER CONSTRAINTS:
-- Background: 100% solid flat uniform pure pitch-black #000000 everywhere, no grid lines, no borders, no divider lines, no box outlines, no text. 30% empty black safety margin around every frame.
+- Background: 100% solid flat uniform pure pitch-black #000000 everywhere, strictly NO checkerboard pattern, no grid lines, no borders, no divider lines, no box outlines, no text. 30% empty black safety margin around every frame.
 
-CRITICAL HUMAN-EYE GROUND PERSPECTIVE & 4:1 FLAT HORIZONTAL VORTEX LOCK:
-- Viewed from a fixed low grazing human eye angle (~15 degrees above an invisible floor): every single frame from Frame 1 to Frame 16 is a flat horizontal swirling whirlpool (3.5:1 width-to-height ratio) lying level and flat on the invisible floor.
+CRITICAL HUMAN-EYE GROUND PERSPECTIVE & WIDE HORIZONTAL VORTEX LOCK:
+- Viewed from a fixed low grazing human eye angle (~15 degrees above an invisible floor): every single frame from Frame 1 to Frame 16 is a wide flat horizontal swirling whirlpool (3.5:1 width-to-height ratio) lying level and flat on the invisible floor inside its widescreen 16:9 frame space.
 
 CRITICAL SILKY MOTION-BLUR SHADOW & ETHEREAL MIST IN ALL 16 FRAMES (NO HARD RINGS, NO EMPTY RINGS!):
-- EVERY SINGLE FRAME from Frame 1 through Frame 16 (strictly including Frame 1 and Frame 16!) MUST be a rich, full, multi-layered swirling whirlpool with soft feathered plasma ribbons, trailing semi-transparent cyan-blue MOTION-BLUR AFTERIMAGE SHADOW TRAILS, and a soft Swirling Diffused Ethereal Mist Veil rising above the vortex!
-- STRICTLY FORBIDDEN to draw bare empty rings in Frame 1 or Frame 16! STRICTLY FORBIDDEN to draw a hard-edged solid white outer ring outline! Every spiral arm has soft airbrushed feathered edges that blend into dreamy translucent cyan-blue motion-blur smoke and mist.
+- EVERY SINGLE FRAME from Frame 1 through Frame 16 (strictly including Frame 1 and Frame 16!) MUST be a rich, full, multi-layered swirling whirlpool with soft feathered plasma ribbons, trailing soft cyan-blue MOTION-BLUR AFTERIMAGE SHADOW TRAILS, and a soft Swirling Diffused Ethereal Mist Veil rising above the vortex!
+- STRICTLY FORBIDDEN to draw bare empty rings in Frame 1 or Frame 16! STRICTLY FORBIDDEN to draw a hard-edged solid white outer ring outline! Every spiral arm has soft airbrushed feathered edges that blend into dreamy cyan-blue motion-blur smoke and mist.
 
 CRITICAL CONTINUOUS CLOCKWISE SWIRLING FLOW ACROSS ALL 16 FRAMES:
 - All 16 frames stay at the exact same 100% full open width while the silky feathered spiral arms, their soft motion-blur ghost shadows, and the rising misty vapor veil swirl continuously clockwise:
-  - Frames 1 to 4: Full swirling horizontal vortex at 100% size wrapped in soft translucent cyan motion-blur mist as the silky spiral ribbons and feathered ghost trails sweep clockwise from 12 o'clock to 3 o'clock.
+  - Frames 1 to 4: Full swirling horizontal vortex at 100% size wrapped in soft glowing cyan motion-blur mist as the silky spiral ribbons and feathered ghost trails sweep clockwise from 12 o'clock to 3 o'clock.
   - Frames 5 to 8: The full-size flat horizontal vortex continues spinning clockwise (sweeping 3 o'clock to 6 o'clock) with soft feathered plasma ribbons, trailing motion-blur ghost shadows, and swirling upward mist veil.
   - Frames 9 to 12: The full-size flat horizontal vortex spins clockwise (sweeping 6 o'clock to 9 o'clock) with continuous soft volumetric mist glow and curving motion-blur afterimage trails.
   - Frames 13 to 16: The full-size flat horizontal vortex completes its clockwise rotation (sweeping 9 o'clock to 12 o'clock) while maintaining the EXACT SAME rich internal spiral ribbons, soft rising ethereal mist glow, and silky motion-blur shadow trails in Frame 15 and Frame 16 (strictly NO empty ring in Frame 16!).
 ```
 
-### Tấm 3: Pha Thu Hẹp & Đóng Cổng (`Sheet 3 of 3: Vortex Collapse & Dissipation From Full Size — Silky Motion-Blur Shadow Edition`)
+### Tấm 3: Pha Thu Hẹp & Đóng Cổng (`Sheet 3 of 3: Vortex Collapse & Dissipation From Full Size — 16:9 Landscape, Silky Motion-Blur Shadow`)
 ```text
-A borderless square 1:1 animation sprite sheet containing exactly 16 sequential hand-drawn 2D anime VFX animation frames of PHASE 3 ONLY (VORTEX CONTRACTION AND CLOSURE STARTING FROM 100% FULL OPEN SIZE IN FRAME 1) of a ground-level dimensional warp portal, floating freely on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
+A borderless widescreen 16:9 animation sprite sheet containing exactly 16 sequential hand-drawn 2D anime VFX animation frames of PHASE 3 ONLY (VORTEX CONTRACTION AND CLOSURE STARTING FROM 100% FULL OPEN SIZE IN FRAME 1) of a ground-level dimensional warp portal, floating freely on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
 
 CRITICAL BACKGROUND & ZERO-BORDER CONSTRAINTS:
 - Background: 100% solid flat uniform pure pitch-black #000000 everywhere, strictly NO checkerboard pattern, no grid lines, no borders, no divider lines, no box outlines, no text. 30% empty black safety margin around every frame.
 
-CRITICAL HUMAN-EYE GROUND PERSPECTIVE & 4:1 FLAT HORIZONTAL VORTEX LOCK:
-- Viewed from a fixed low grazing human eye angle (~15 degrees above an invisible floor): every active frame is a flat horizontal swirling whirlpool (3.5:1 width-to-height ratio) lying level and flat on the invisible floor.
+CRITICAL HUMAN-EYE GROUND PERSPECTIVE & WIDE HORIZONTAL VORTEX LOCK:
+- Viewed from a fixed low grazing human eye angle (~15 degrees above an invisible floor): every active frame is a wide flat horizontal swirling whirlpool (3.5:1 width-to-height ratio) lying level and flat on the invisible floor inside its widescreen 16:9 frame space.
 
 CRITICAL SILKY MOTION-BLUR SHADOW & ETHEREAL MIST (NO HARD RINGS!):
 - Every active frame features soft feathered plasma ribbons, trailing soft cyan-blue MOTION-BLUR AFTERIMAGE SHADOW TRAILS, and a soft Swirling Diffused Mist Veil rising above the vortex! STRICTLY FORBIDDEN to draw hard-edged solid chalky white rings!
 
 CRITICAL CONTINUITY HANDSHAKE (START AT 100% FULL OPEN IN FRAME 1, THEN SPIN INWARD & DISSOLVE):
 - Frame-by-frame progression (16 frames of smooth silky closing ONLY):
-  - Frames 1 to 4 (Full Open Start & Initial Silky Suction): Frame 1 starts at 100% full open width wrapped in soft translucent cyan motion-blur mist; across Frames 2 to 4 the flat horizontal vortex spins clockwise and pulls inward to 75% width with soft feathered ghost trails.
+  - Frames 1 to 4 (Full Open Start & Initial Silky Suction): Frame 1 starts at 100% full open width wrapped in soft glowing cyan motion-blur mist; across Frames 2 to 4 the flat horizontal vortex spins clockwise and pulls inward to 75% width with soft feathered ghost trails.
   - Frames 5 to 8 (Accelerating Misty Contraction): The flat horizontal vortex narrows smoothly from 65% to 40% width as the silky spiral ribbons and soft motion-blur smoke curl tightly inward toward the center.
   - Frames 9 to 12 (Soft Implosion into Swirling Mist): The flat horizontal vortex shrinks from 30% down to a small glowing horizontal wisp of swirling cyan mist and soft motion-blur trails.
-  - Frames 13 to 16 (Dreamy Vapor Dissipation & Clean Fadeout): The remaining soft translucent cyan mist and faint glowing motes gently disperse and fade out across Frames 13 to 15, leaving Frame 16 completely 100% empty pitch-black #000000.
+  - Frames 13 to 16 (Dreamy Vapor Dissipation & Clean Fadeout): The remaining soft glowing cyan mist and faint glowing motes gently disperse and fade out across Frames 13 to 15, leaving Frame 16 completely 100% empty pitch-black #000000.
 ```
 
 ---
 
-## 3. Bộ Mẫu Prompt Chuẩn Cho Chuỗi Nhân Quả: Sét Đánh Xuống Đất → Nổ Xung Kích Mặt Đất (2 Tấm Nối Tiếp)
+## 3. Bộ Mẫu Prompt Chuẩn Cho Tia Sét Thẳng Đứng — Tỉ Lệ `9:16` (`IMAGE_ASPECT_RATIO_PORTRAIT`) Với Lưới `3 Hàng × 3 Cột = 9 Frames`
 
-### Tấm 1: Tia Sét Giáng Xuống & Chạm Đất (`Sheet 1 of 2: Lightning Bolt Sky Descent & Ground Contact`)
+### Tấm 1: Tia Sét Giáng Thẳng Đứng Từ Trời Xuống Đất (`Sheet 1: Vertical Lightning Strike — 9:16 Portrait, 3x3 Grid = 9 Frames`)
 ```text
-A borderless square 1:1 animation sprite sheet containing exactly 16 sequential hand-drawn animation frames of PHASE 1 (JAGGED LIGHTNING BOLT DESCENDING FROM SKY AND STRIKING THE GROUND) on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
+A borderless vertical 9:16 portrait animation sprite sheet containing exactly 9 sequential hand-drawn 2D anime VFX animation frames of a TALL VERTICAL SKY-TO-GROUND LIGHTNING BOLT STRIKE, floating freely on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 3 rows of 3 columns (9 frames total), ordered left-to-right then top-to-bottom.
 
 CRITICAL BACKGROUND & ZERO-BORDER CONSTRAINTS:
-- Background: 100% solid flat uniform pure pitch-black #000000 everywhere, no grid lines, no borders, no divider lines, no horizon line. 30% empty black safety margin around every frame.
+- Background: 100% solid flat uniform pure pitch-black #000000 everywhere, strictly NO checkerboard pattern, no grid lines, no borders, no divider lines, no box outlines, no horizon line. 25% empty black safety margin around every frame.
 
-CRITICAL KINETIC PROGRESSION & CONTINUITY HANDSHAKE TO SHEET 2:
-- Every frame has freshly drawn jagged lightning geometry (no static copies):
-  - Frames 1 to 4 (High Sky Emergence): A bright white-cyan electric leader arc crackles at the top and snakes downward through the upper space; bottom area is 100% empty black.
-  - Frames 5 to 8 (Rapid Downward Bolt Extension): The jagged lightning bolt streaks further downward toward the lower third with branching side-arcs; still no ground contact yet.
-  - Frames 9 to 12 (First Ground Contact & Flash): At Frame 9, the tip of the bolt hits the invisible floor plane, igniting a flat 4:1 horizontal elliptical contact ring and initial upward electric sparks.
-  - Frames 13 to 16 (Peak Surge Charging the Impact Core): Massive surging energy pours down the main lightning column into a blinding white-cyan compressed plasma core sitting on a flat 4:1 horizontal floor ellipse at Frame 16, primed to detonate in Sheet 2!
+CRITICAL VERTICAL 9:16 PROPORTION & SOFT PLASMA GLOW AFTERIMAGE:
+- Because each of the 9 frames has a tall 9:16 vertical proportion, the lightning bolt stretches dramatically along the vertical axis surrounded by a soft diffused cyan-blue plasma bloom and electric afterimage glow:
+  - Row 1 (Frames 1 to 3 - High Sky Emergence & Rapid Downward Bolt): Frame 1 sparks near the top sky; Frame 2 zigzags halfway down; Frame 3 streaks 80% down toward the bottom with branching side-arcs and soft cyan plasma glow.
+  - Row 2 (Frames 4 to 6 - Ground Contact & Full Vertical Lightning Column): In Frame 4 the bolt tip strikes the invisible floor at the bottom, igniting a flat horizontal electric contact ring; in Frames 5 and 6 a massive blazing white-cyan vertical lightning column connects top-to-bottom with whipping electric branches and soft glowing mist.
+  - Row 3 (Frames 7 to 9 - Overcharged Ground Plasma Core): Across Frames 7 to 9 the upper bolt snaps and channels all its remaining energy downward into a blinding, crackling cyan-white plasma sphere and flat horizontal electric shockwave ring at the bottom of Frame 9, ready to detonate in Sheet 2!
 ```
 
 ### Tấm 2: Vụ Nổ Điện Quang & Sóng Xung Kích Mặt Đất (`Sheet 2 of 2: Ground Shockwave Explosion & Electric Aftershock`)
