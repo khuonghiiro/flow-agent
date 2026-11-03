@@ -49,8 +49,9 @@ Tài liệu này là quy tắc bắt buộc áp dụng khi nhận yêu cầu t�
    - Lớp bóng mờ và làn sương sáng bốc lên từ cổng **không được dựng thẳng đứng bất động**, mà phải **nghiêng lượn, uốn cong chữ S và cuộn xoắn mềm mại theo đúng chiều gió lốc của vòng xoáy ở từng frame (`softly curving, leaning, and swirling clockwise with the vortex momentum like silk veil in water`)**.
 3. **Cấm Vẽ Vành Khung Elip Đặc Cứng (`NO Hard-Edged Solid Chalky Ring`)**:
    - Tuyệt đối không vẽ một đường viền elip trắng đặc khép kín cứng nhắc như cái đĩa nhựa. Toàn bộ vòng xoáy phải mềm mại như những dải lụa khói ánh sáng đan quyện vào nhau với biên mờ mịn (`soft feathered airbrushed edges`).
-4. **Chỉ Định Góc Quay Đều Đặn Từng Frame (`Explicit 22.5° Clockwise Step Per Frame`)**:
-   - Các dải lụa sáng và đuôi bóng mờ phía sau chúng phải nhích đều `22.5°` theo chiều kim đồng hồ ở mỗi frame kế tiếp (`Frame 1 at 0°, Frame 2 at 22.5°, Frame 3 at 45°... Frame 16 at 337.5°`), không để 2 frame liên tiếp bị trùng góc.
+4. **Khóa Trục Cố Định Của Elip — Chỉ Xoay Dòng Chảy Nội Tại (`Fixed Ellipse Major-Axis Lock — Internal Flow Rotation Only`)**:
+   - **CẢNH BÁO QUAN TRỌNG**: Tuyệt đối **KHÔNG viết `(Frame 1 at 0°, Frame 2 at 22.5°, Frame 3 at 45°...)`** khi mô tả elip mặt đất/bầu trời/trái/phải, vì AI sẽ hiểu nhầm là xoay nghiêng cả hình bầu dục 45°, 90° trên mặt phẳng 2D như đồng xu bị lật nghiêng!
+   - Phải luôn ghi rõ: **Trục dài của hình elip (`major axis of the ellipse`) phải giữ nguyên 100% nằm ngang cân bằng song song với đáy ảnh (`100% level horizontal oval, NEVER tilted diagonally`)** (hoặc thẳng đứng 100% với hướng Trái/Phải), và **CHỈ CÓ dòng chảy lụa xoáy + đuôi bóng mờ dư ảnh bên trong lòng elip (`ONLY the internal silky spiral waves and their soft motion-blur shadow trails`)** quét vòng theo chiều kim đồng hồ (`front-right -> front-bottom -> left -> back-top -> back-right`).
 5. **Biến Đổi Hình Thái Liên Tục Đối Với Hiệu Ứng Nổ / Sét (`Continuous Morphological Evolution with Soft Glow Afterimage`)**:
    - Ngay cả với tia sét hay vụ nổ, xung quanh lõi sét/lõi nổ cũng phải có **quầng bóng mờ hào quang mềm (`soft diffused plasma bloom & fading afterimage shadow`)** để chuyển động nổ và giật sét có độ êm và chiều sâu quang học.
 
