@@ -55,25 +55,24 @@ CRITICAL KINETIC FLUIDITY & CONTINUITY HANDSHAKE (END AT 100% OPEN IN FRAME 16 W
 
 ### Tấm 2: Pha Duy Trì Vòng Xoáy Liên Tục (`Sheet 2 of 3: Continuous Active Spinning Loop at 100% Full Size — Silky Motion-Blur Shadow Edition`)
 ```text
-A borderless square 1:1 animation sprite sheet containing exactly 16 sequential hand-drawn 2D anime VFX animation frames of PHASE 2 (SEAMLESS CONTINUOUS SPINNING VORTEX LOOP AT CONSTANT FULL SIZE) of a ground-level dimensional warp portal, floating freely on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
+A borderless square 1:1 animation sprite sheet containing exactly 16 sequential hand-drawn 2D anime VFX animation frames of PHASE 2 (CONTINUOUS SPINNING VORTEX LOOP AT CONSTANT FULL SIZE) of a ground-level dimensional warp portal, floating freely on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
 
 CRITICAL BACKGROUND & ZERO-BORDER CONSTRAINTS:
 - Background: 100% solid flat uniform pure pitch-black #000000 everywhere, no grid lines, no borders, no divider lines, no box outlines, no text. 30% empty black safety margin around every frame.
 
-CRITICAL LEVEL HORIZONTAL GROUND ELLIPSE LOCK (NEVER TILT THE OVAL DIAGONALLY!):
-- Viewed from a fixed low grazing human eye angle (~15 degrees above an invisible floor): ALL 16 FRAMES MUST be a LEVEL HORIZONTAL ELLIPSE (3.5:1 width-to-height ratio) whose long axis is 100% perfectly horizontal left-to-right parallel to the bottom edge of the canvas!
-- STRICTLY FORBIDDEN to tilt or angle the oval diagonally or vertically in any frame! All 16 ovals lie completely level and flat horizontally on the invisible floor at the exact same full open width.
+CRITICAL HUMAN-EYE GROUND PERSPECTIVE & 4:1 FLAT HORIZONTAL VORTEX LOCK:
+- Viewed from a fixed low grazing human eye angle (~15 degrees above an invisible floor): every single frame from Frame 1 to Frame 16 is a flat horizontal swirling whirlpool (3.5:1 width-to-height ratio) lying level and flat on the invisible floor.
 
-CRITICAL SILKY MOTION-BLUR AFTERIMAGE SHADOW & SWIRLING MIST GLOW IN ALL 16 FRAMES:
-- Every single frame from Frame 1 to Frame 16 MUST have a rich, soft, semi-transparent cyan-blue MOTION-BLUR AFTERIMAGE SHADOW TRAIL (bóng mờ dư ảnh chuyển động mềm mại) and a soft airbrushed Swirling Ethereal Mist Glow rising from the vortex!
-- STRICTLY FORBIDDEN to draw hard-edged solid chalky lines! Every swirling plasma ribbon has soft airbrushed feathered edges blending smoothly into its trailing translucent cyan-blue motion-blur ghost shadow and soft curving vapor mist, making the spinning vortex look supple, elastic, and liquid-smooth.
+CRITICAL SILKY MOTION-BLUR SHADOW & ETHEREAL MIST IN ALL 16 FRAMES (NO HARD RINGS, NO EMPTY RINGS!):
+- EVERY SINGLE FRAME from Frame 1 through Frame 16 (strictly including Frame 1 and Frame 16!) MUST be a rich, full, multi-layered swirling whirlpool with soft feathered plasma ribbons, trailing semi-transparent cyan-blue MOTION-BLUR AFTERIMAGE SHADOW TRAILS, and a soft Swirling Diffused Ethereal Mist Veil rising above the vortex!
+- STRICTLY FORBIDDEN to draw bare empty rings in Frame 1 or Frame 16! STRICTLY FORBIDDEN to draw a hard-edged solid white outer ring outline! Every spiral arm has soft airbrushed feathered edges that blend into dreamy translucent cyan-blue motion-blur smoke and mist.
 
-CRITICAL INTERNAL SWIRLING PROGRESSION ACROSS 16 FRAMES (WHILE OVAL STAYS 100% LEVEL HORIZONTAL):
-- While the outer horizontal ellipse stays 100% level on the floor, the internal silky white-cyan spiral arms, their soft feathered motion-blur shadow tails, and the rising misty vapor wisps swirl continuously clockwise inside the horizontal plane:
-  - Row 1 (Frames 1 to 4): The brightest silky spiral wave crest and its trailing soft motion-blur shadow sweep clockwise along the front-right curve of the level horizontal ellipse, with soft misty vapor curling upward.
-  - Row 2 (Frames 5 to 8): The silky spiral wave crest and feathered afterimage shadow sweep across the front-bottom rim toward the front-left of the level horizontal ellipse, with swirling upward cyan mist.
-  - Row 3 (Frames 9 to 12): The silky spiral wave crest and soft motion-blur tail sweep around the left rim toward the back-top rim of the level horizontal ellipse.
-  - Row 4 (Frames 13 to 16): The silky spiral wave crest and soft motion-blur mist complete their clockwise flow along the back-right rim of the level horizontal ellipse, connecting seamlessly back into Frame 1!
+CRITICAL CONTINUOUS CLOCKWISE SWIRLING FLOW ACROSS ALL 16 FRAMES:
+- All 16 frames stay at the exact same 100% full open width while the silky feathered spiral arms, their soft motion-blur ghost shadows, and the rising misty vapor veil swirl continuously clockwise:
+  - Frames 1 to 4: Full swirling horizontal vortex at 100% size wrapped in soft translucent cyan motion-blur mist as the silky spiral ribbons and feathered ghost trails sweep clockwise from 12 o'clock to 3 o'clock.
+  - Frames 5 to 8: The full-size flat horizontal vortex continues spinning clockwise (sweeping 3 o'clock to 6 o'clock) with soft feathered plasma ribbons, trailing motion-blur ghost shadows, and swirling upward mist veil.
+  - Frames 9 to 12: The full-size flat horizontal vortex spins clockwise (sweeping 6 o'clock to 9 o'clock) with continuous soft volumetric mist glow and curving motion-blur afterimage trails.
+  - Frames 13 to 16: The full-size flat horizontal vortex completes its clockwise rotation (sweeping 9 o'clock to 12 o'clock) while maintaining the EXACT SAME rich internal spiral ribbons, soft rising ethereal mist glow, and silky motion-blur shadow trails in Frame 15 and Frame 16 (strictly NO empty ring in Frame 16!).
 ```
 
 ### Tấm 3: Pha Thu Hẹp & Đóng Cổng (`Sheet 3 of 3: Vortex Collapse & Dissipation From Full Size`)
