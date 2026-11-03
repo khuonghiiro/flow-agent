@@ -75,22 +75,25 @@ CRITICAL CONTINUOUS CLOCKWISE SWIRLING FLOW ACROSS ALL 16 FRAMES:
   - Frames 13 to 16: The full-size flat horizontal vortex completes its clockwise rotation (sweeping 9 o'clock to 12 o'clock) while maintaining the EXACT SAME rich internal spiral ribbons, soft rising ethereal mist glow, and silky motion-blur shadow trails in Frame 15 and Frame 16 (strictly NO empty ring in Frame 16!).
 ```
 
-### Tấm 3: Pha Thu Hẹp & Đóng Cổng (`Sheet 3 of 3: Vortex Collapse & Dissipation From Full Size`)
+### Tấm 3: Pha Thu Hẹp & Đóng Cổng (`Sheet 3 of 3: Vortex Collapse & Dissipation From Full Size — Silky Motion-Blur Shadow Edition`)
 ```text
-A borderless square 1:1 animation sprite sheet containing exactly 16 sequential hand-drawn animation frames of PHASE 3 ONLY (IMPLOSION, CONTRACTION AND CLOSURE STARTING FROM 100% FULL SIZE) of a ground-level dimensional warp portal, floating freely on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
+A borderless square 1:1 animation sprite sheet containing exactly 16 sequential hand-drawn 2D anime VFX animation frames of PHASE 3 ONLY (VORTEX CONTRACTION AND CLOSURE STARTING FROM 100% FULL OPEN SIZE IN FRAME 1) of a ground-level dimensional warp portal, floating freely on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
 
 CRITICAL BACKGROUND & ZERO-BORDER CONSTRAINTS:
 - Background: 100% solid flat uniform pure pitch-black #000000 everywhere, no grid lines, no borders, no divider lines, no box outlines, no text. 30% empty black safety margin around every frame.
 
-CRITICAL HUMAN-EYE GROUND PERSPECTIVE & 4:1 FLAT ELLIPSE LOCK:
-- In all active frames, the portal remains strictly locked as a 4:1 PANCAKE-FLAT HORIZONTAL ELLIPSE lying flat on an invisible floor (NEVER a round 1:1 circle).
+CRITICAL HUMAN-EYE GROUND PERSPECTIVE & 4:1 FLAT HORIZONTAL VORTEX LOCK:
+- Viewed from a fixed low grazing human eye angle (~15 degrees above an invisible floor): every active frame is a flat horizontal swirling whirlpool (3.5:1 width-to-height ratio) lying level and flat on the invisible floor.
 
-CRITICAL CONTINUITY HANDSHAKE (START AT 100% FULL OPEN IN FRAME 1, THEN COLLAPSE):
-- Frame 1 MUST start at 100% FULL OPEN WIDTH (continuing directly from Sheet 2), then progressively spin inward and collapse across the 16 frames:
-  - Frames 1 to 4 (Initial Inward Suction from Full Size): Frame 1 is fully open (100% width) and spinning rapidly; across Frames 2 to 4, the flat 4:1 horizontal vortex begins pulling inward (to 80% width) with inward-curling plasma ribbons and rising sparks being sucked toward the core.
-  - Frames 5 to 8 (Accelerating Vortex Contraction): The spinning flat 4:1 horizontal ellipse rapidly narrows from 70% down to 40% width as the spiral arms whip tightly around the center and upward rays shorten.
-  - Frames 9 to 12 (Implosion & Snap Shut): The flat horizontal vortex collapses into a tight intense horizontal energy slit (Frames 9-10) and snaps shut with a horizontal burst of scattering cyan electric sparks (Frames 11-12).
-  - Frames 13 to 16 (Spark Dissipation & Clean Fadeout): Lingering horizontal electric sparks and tiny glowing motes scatter and fade out (Frames 13-15), leaving Frame 16 completely 100% empty pitch-black #000000.
+CRITICAL SILKY MOTION-BLUR SHADOW & ETHEREAL MIST (NO HARD RINGS!):
+- Every active frame features soft feathered plasma ribbons, trailing semi-transparent cyan-blue MOTION-BLUR AFTERIMAGE SHADOW TRAILS, and a soft Swirling Diffused Mist Veil rising above the vortex! STRICTLY FORBIDDEN to draw hard-edged solid chalky white rings!
+
+CRITICAL CONTINUITY HANDSHAKE (START AT 100% FULL OPEN IN FRAME 1, THEN SPIN INWARD & DISSOLVE):
+- Frame-by-frame progression (16 frames of smooth silky closing ONLY):
+  - Frames 1 to 4 (Full Open Start & Initial Silky Suction): Frame 1 starts at 100% full open width wrapped in soft translucent cyan motion-blur mist; across Frames 2 to 4 the flat horizontal vortex spins clockwise and pulls inward to 75% width with soft feathered ghost trails.
+  - Frames 5 to 8 (Accelerating Misty Contraction): The flat horizontal vortex narrows smoothly from 65% to 40% width as the silky spiral ribbons and soft motion-blur smoke curl tightly inward toward the center.
+  - Frames 9 to 12 (Soft Implosion into Swirling Mist): The flat horizontal vortex shrinks from 30% down to a small glowing horizontal wisp of swirling cyan mist and soft motion-blur trails.
+  - Frames 13 to 16 (Dreamy Vapor Dissipation & Clean Fadeout): The remaining soft translucent cyan mist and faint glowing motes gently disperse and fade out across Frames 13 to 15, leaving Frame 16 completely 100% empty pitch-black #000000.
 ```
 
 ---
