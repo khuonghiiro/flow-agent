@@ -8,120 +8,112 @@ Tài liệu này là quy tắc bắt buộc áp dụng khi nhận yêu cầu t�
 
 - **Tỉ lệ ảnh tổng thể**: `1:1` (`IMAGE_ASPECT_RATIO_SQUARE`).
 - **Bố cục lưới**: Chính xác 16 frames riêng biệt, xếp thành 4 hàng × 4 cột (thứ tự đọc: từ trái sang phải, từ trên xuống dưới).
-- **Phân bổ không gian**: Mỗi frame chiếm 1 ô ảo 1/4 × 1/4 của bức ảnh.
+- **Phân bổ không gian**: Mỗi frame chiếm 1 vùng không gian 1/4 × 1/4 của bức ảnh, trôi nổi tự do trên nền phẳng liền mạch.
 
 ---
 
-## 2. Quy Tắc Chọn Màu Nền Thông Minh (Adaptive Chroma Background Selection)
+## 2. Quy Tắc Chọn Màu Nền Linh Hoạt Không Trùng Chi Tiết (Flexible Non-Overlapping Solid Background)
 
-> ⚠️ **LỖI CỐT LÕI CẦN TRÁNH**: Màu nền bị **tương đồng hoặc hòa lẫn với chi tiết trong frame** (ví dụ: hiệu ứng phát sáng lấp lánh có quầng tán sắc tím/hồng mà lại dùng nền Magenta `#FF00FF` dẫn đến khi tách phông sẽ bị ăn lẹm chi tiết, hoặc dính viền hồng lem nhem quanh tia sáng).
+> 💡 **NGUYÊN TẮC CỐT LÕI**: Màu nền **KHÔNG bắt buộc phải là Chroma Green `#00FF00` hay Magenta `#FF00FF`**. Bạn được phép chọn **bất kỳ màu nền phẳng đơn sắc nào** (Đen tuyền `#000000`, Xám than `#1A1A1A`, Xanh đêm `#080C18`, Nâu sẫm, Đỏ đô, Xanh lá, Tím, v.v.), **MIỄN LÀ màu nền đó tuyệt đối KHÔNG TRÙNG hoặc gần giống với bất kỳ màu sắc/chi tiết nào của hiệu ứng**.
 
-### Bảng Ma Trận Chọn Màu Nền Theo Chủng Loại Hiệu Ứng:
+### Gợi Ý Chọn Màu Nền Tương Phản Tối Ưu:
 
-| Loại Hiệu Ứng | Bảng Màu Hiệu Ứng | Màu Nền Tối Ưu Được Chọn | Lý Do Kỹ Thuật Tách Phông |
+| Chủng Loại & Màu Sắc Chi Tiết Hiệu Ứng | Màu Nền Phẳng Đề Xuất (Tự Do Linh Hoạt) | Điều Kiện Cấm (Không Trùng Màu Chi Tiết) |
+|---|---|---|
+| **Hiệu ứng phát sáng tự thân, Hào quang, Cổng năng lượng, Sét, Phép thuật (Cyan, Xanh dương, Vàng kim, Trắng, Tím, Lửa)** | **Đen tuyền (`#000000`)**, **Than chì tối (`#121212`)**, hoặc màu đơn sắc đối lập bất kỳ (`#2A0800`, `#00FF00`, `#FF00FF`) | - Nếu hiệu ứng có khói đen/xám tối → Không dùng nền Đen/Xám.<br>- Nếu hiệu ứng có tia tím/hồng → Không dùng nền Tím/Hồng.<br>- Nếu hiệu ứng có màu xanh lá → Không dùng nền Xanh lá. |
+| **Hiệu ứng Lửa, Vụ nổ nhiệt, Nham thạch (Đỏ, Cam, Vàng, Khói xám)** | **Xanh dương đậm (`#001A4D`)**, **Xanh ngọc tối (`#002B36`)**, hoặc **Xanh lá (`#00FF00`)** | Cấm dùng nền Đỏ, Cam, Hồng, Tím hoặc Xám trùng màu khói. |
+| **Hiệu ứng Băng, Nước, Sét xanh, Cổng không gian Cyan (Xanh lam, Cyan, Trắng)** | **Đen tuyền (`#000000`)**, **Đỏ rượu tối (`#2B0015`)**, **Tím (`#FF00FF`)**, hoặc **Vàng đất sẫm** | Cấm dùng nền Xanh dương, Xanh ngọc, Trắng. |
+
+### 3 Nguyên tắc bất biến về màu nền:
+1. **Nền phẳng tuyệt đối (100% Solid Flat Uniform Canvas)**: Chỉ duy nhất 1 mã màu đồng nhất trên toàn bộ ảnh, không gradient, không bóng đổ, không vignette.
+2. **Không trùng màu chi tiết (Zero Color Overlap)**: Màu nền phải tách biệt 100% với bảng màu của hiệu ứng để dễ dàng tách nền (keying / luma matte / screen blending).
+3. **Đồng nhất màu nền trong cùng một chuỗi hiệu ứng nối tiếp**: Nếu một hiệu ứng gồm nhiều tấm ảnh nối tiếp nhau (Tấm 1 -> Tấm 2 -> Tấm 3), tất cả các tấm trong chuỗi đó phải dùng chung **cùng 1 mã màu nền**.
+
+---
+
+## 3. Quy Tắc Tạo Độ Mượt Động Học, Chống Đơ Giật & Cấm "Bóng Hiệu Ứng Đứng Yên" (KINETIC FLUIDITY & ANTI-FROZEN-BASE LOCK)
+
+> ⚠️ **2 LỖI NGHIÊM TRỌNG LÀM VÒNG XOÁY BỊ CỨNG NGẮC**:
+> 1. **Lỗi "Bóng Hiệu Ứng Đứng Yên" (`Frozen Shadow / Static Base Ring & Fixed Aura Curtain`)**: AI vẽ phần đế dưới (vành khung elip trắng cứng, lòng hố tối sẫm, hoặc bức rèm hào quang sọc thẳng đứng phía sau) **đứng im bất động như một cái khuôn đúc tĩnh ở cả 16 frames**, rồi chỉ dán đè 1 vệt sáng xoay bên trên. Khi ghép chạy animate, mắt người thấy cái bóng/khung nền đứng yên nên toàn bộ vòng xoáy có cảm giác **cứng ngắc, giả tạo**!
+> 2. **Lỗi "Kẹt Góc Xoay Giữa Các Frame Cùng Hàng" (`Stuck / Clustered Angles Across Frames`)**: Khi chỉ mô tả góc xoay theo từng hàng (Row 1, Row 2...), AI vẽ cả 4–6 frames liên tiếp có vệt sáng kẹt cứng ở cùng một góc (ví dụ bên phải), rồi đột ngột nhảy cóc sang góc đối diện ở hàng tiếp theo, làm vòng xoay bị khựng và giật!
+
+Để 16 frames ghép lại thành chuyển động **xoay cuộn mượt mà 100%, không có bất kỳ thành phần nào bị đứng yên**, prompt **BẮT BUỘC** phải áp dụng **5 Quy Luật Động Học Toàn Phần (`100% Full-Body Kinetic Motion`)**:
+
+1. **TUYỆT ĐỐI CẤM Khung Viền Cứng & CẤM Bóng Nền Đứng Yên (`NO Rigid Outer Ring & NO Frozen Background Glow/Shadow`)**:
+   - **Cấm vẽ đường viền elip khép kín liền nét (`NO solid static oval outline ring`)**: Rìa ngoài của vòng xoáy phải được cấu thành **100% từ các dải lụa plasma rời nhau đang uốn lượn cuốn vào trong (`composed entirely of loose, overlapping, flowing S-curve plasma ribbons with jagged/feathered moving edges — ZERO static outer ring`)**. Khi các dải lụa xoay, bản thân hình dáng rìa ngoài cũng biến thiên mềm mại theo từng frame!
+   - **Cấm vẽ bóng hố đen tĩnh hoặc rèm hào quang tĩnh phía sau (`NO static vertical glow curtain, NO frozen dark shadow pit`)**: Tuyệt đối không vẽ một bức màn sọc sáng mờ đứng yên phía sau cổng. Toàn bộ lòng xoáy từ rìa vào tận tâm phải là **nhiều lớp cánh lốc xoáy sáng-tối đan vào nhau và cùng vặn xoắn ở mọi frame (`multi-layered churning pinwheel vortex bands twisting all the way to the core`)**.
+2. **Dùng Cấu Trúc Đa Cánh Xoáy Cuốn Đều (`Multi-Arm Pinwheel Spiral` — 3 đến 4 Cánh Xoáy Lốc)**:
+   - Không vẽ chỉ 1 vệt lưỡi liềm đơn độc trên nền tối (dễ gây cảm giác kẹt ở 1 bên). Phải mô tả **3 hoặc 4 cánh xoáy sáng rực (`3 or 4 interlocking bright spiral arms like a spinning galaxy/whirlpool pinwheel`)** phân bổ quanh tâm, để ở bất kỳ frame nào toàn bộ chu vi vòng xoáy đều đang cuộn chảy đồng bộ.
+3. **Chỉ Định Góc Quay Từng Frame Một (`Explicit Frame-by-Frame Clock Progression: Frame 1 -> Frame 16`)**:
+   - Không gom chung 4 frame vào 1 góc! Phải chỉ định góc tiến từng frame riêng biệt (`Frame 1 at 12:00, Frame 2 at 12:45, Frame 3 at 1:30, Frame 4 at 2:15...`) để ép AI vẽ mỗi frame nhích đi đúng `22.5°` theo chiều kim đồng hồ, tuyệt đối không có 2 frame liền kề nào giống góc nhau!
+4. **Luồng Xoắn Ốc Bốc Lên Thay Vì Tia Thẳng Đứng Tĩnh (`Helical Corkscrew Rising Streams`)**:
+   - Thay vì các tia thẳng đứng cứng đờ như hàng rào (dễ bị đứng yên giữa các frame), năng lượng thoát ra khỏi cổng phải là **các dải lụa sáng và hạt điện tích bay xoắn ốc nghiêng theo chiều quay (`helical corkscrewing energy ribbons and spiralling spark trails whipping diagonally in the direction of rotation`)**, mỗi frame bay lên và dịch sang vị trí mới.
+5. **Biến Đổi Hình Thái Liên Tục Đối Với Hiệu Ứng Nổ / Sét (`Continuous Morphological Evolution`)**:
+   - Với tia sét hoặc vụ nổ: Không bao giờ lặp lại cùng một nhánh sét hay cùng một đám nổ ở 2 frame liên tiếp. Mỗi frame nhánh sét phải giật sang đường gấp khúc mới, vòng sóng xung kích phải dãn rộng hơn kèm các mảnh tia lửa văng xa hơn theo quán tính vật lý.
+
+---
+
+## 4. Quy Tắc Chuỗi Hoạt Ảnh Nối Tiếp Đa Tấm (MULTI-SHEET SEQUENTIAL CHAINING ARCHITECTURE)
+
+> ⚠️ **LỖI CỐT LÕI KHI NHỒI NHÉT VÀO 1 TẤM DUY NHẤT**:
+> Một tấm Sprite Sheet chỉ có **16 frames** (tương đương ~0.5 – 0.6 giây ở 24–30fps). Nếu nhồi nhét cả **Mở cổng + Xoáy duy trì + Đóng cổng** (hoặc **Sét đánh xuống + Vụ nổ mặt đất + Khói tàn**) vào chung 1 tấm 16 frames thì mỗi giai đoạn chỉ có 3–4 frames → chuyển động bị **nhảy bước đột ngột (steppy), thiếu hụt giai đoạn duy trì, và bị ngắt cụt**!
+
+Vì vậy, khi tạo hiệu ứng có vòng đời đầy đủ hoặc có chuỗi nhân quả liên hoàn, **BẮT BUỘC phải chia thành CHUỖI CÁC TẤM SPRITE SHEET NỐI TIẾP NHAU (`Multi-Sheet Sequential Chain`)**, trong đó **Frame 16 của Tấm trước khớp nối trực tiếp với Frame 1 của Tấm sau**:
+
+### 4.1. Mẫu Chuỗi 1: Hiệu Ứng Cổng Dịch Chuyển / Vòng Ma Pháp / Khiên Năng Lượng (Chuỗi 3 Tấm Nối Tiếp — 48 Frames)
+
+| Thứ Tự Tấm (Sheet) | Vai Trò Trong Chuỗi Hoạt Ảnh | Diễn Biến Chi Tiết Xuyên Suốt 16 Frames Của Tấm Đó | Quy Tắc Khớp Nối Giữa Các Tấm (Continuity Handshake) |
 |---|---|---|---|
-| **Ánh sáng quang học, Tia Lấp Lánh (Sparkle, Lens Flare, Glint, Twinkle)** | Trắng, Vàng kim (Gold), Cyan, Xanh ngọc | **Pure Chroma Green `#00FF00`** HOẶC **Pure Pitch Black `#000000`** | - Nền Green `#00FF00`: Tương phản tuyệt đối với tia sáng vàng/trắng/cyan, không bị dính sắc tố đỏ/tím.<br>- Nền Black `#000000`: Chuẩn VFX Additive Blending (`Screen` / `Add`), tự động trong suốt trong Premiere/AE/Unity, giữ trọn vẹn hào quang mờ và bụi sáng mịn 100%. |
-| **Lửa, Dung nham, Năng lượng nhiệt** | Đỏ, Cam, Vàng, Hồng | **Pure Chroma Green `#00FF00`** hoặc **Pure Deep Blue `#0000FF`** | Tuyệt đối **CẤM dùng Magenta `#FF00FF`** vì Magenta chứa kênh Đỏ (R=255) sẽ ăn đứt viền lửa khi keying. |
-| **Sét điện, Băng giá, Nước, Phép thuật xanh** | Xanh dương, Cyan, Trắng tinh | **Pure Magenta `#FF00FF`** hoặc **Pure Chroma Green `#00FF00`** | Magenta tách biệt hoàn toàn với dải màu Cyan/Blue. |
-| **Chất độc, Axit, Cây cỏ, Phép thuật mộc** | Xanh lá cây, Lục bảo | **Pure Magenta `#FF00FF`** | Tuyệt đối **CẤM dùng Green `#00FF00`** vì sẽ làm biến mất chi tiết hiệu ứng. |
+| **Tấm 1 (`Sheet 1: Opening / Spawn`)** | **Pha Khởi Tạo & Bung Mở Cổng** (16 frames chỉ dành riêng cho việc mở cổng mượt mà) | - **Frames 1–4**: Điểm sáng nứt ra thành khe năng lượng nhỏ, bắt đầu xoay và bắn tia.<br>- **Frames 5–12**: Vòng xoáy mở rộng dần từng nấc nhỏ mượt mà (vừa nở rộng vừa xoay góc `+22.5°/frame`, các dải plasma vặn xoắn mạnh).<br>- **Frames 13–16**: Cổng đạt **100% kích thước mở cực đại (Full Aperture)**, vòng xoáy cuộn tròn ổn định. | **TUYỆT ĐỐI KHÔNG đóng cổng ở Tấm 1!** Frame 16 kết thúc ở trạng thái **Cổng đang mở to 100%** để truyền thẳng sang Frame 1 của Tấm 2. |
+| **Tấm 2 (`Sheet 2: Active Spinning Loop`)** | **Pha Duy Trì Xoáy Liên Tục Vô Tận** (16 frames Seamless Loop ở kích thước mở 100%) | - **Tất cả 16 frames (Frames 1–16)** đều giữ nguyên **kích thước mở 100% (Full Aperture)** từ Frame 16 của Tấm 1 (không phóng to, không thu nhỏ!).<br>- Cánh xoáy plasma bên trong, các lưỡi năng lượng quanh viền và các tia sáng **xoay tròn liên tục 1 vòng 360° qua 16 frames** (`Frame 1 = 0°`, `Frame 5 = 90°`, `Frame 9 = 180°`, `Frame 13 = 270°`, `Frame 16 = 337.5°` nối khít về `Frame 1`). | Khớp hoàn hảo với cuối Tấm 1 và đầu Tấm 3. Có thể lặp (loop) Tấm 2 vô hạn lần trong phim/game mà không bao giờ bị khựng hay ngắt nhịp! |
+| **Tấm 3 (`Sheet 3: Collapse / Closure`)** | **Pha Thu Hẹp & Đóng Cổng Tan Biến** (16 frames chỉ dành riêng cho việc đóng cổng mượt mà) | - **Frame 1**: Bắt đầu ngay ở trạng thái **Cổng đang mở to 100% (Full Aperture)** nối tiếp từ Tấm 2.<br>- **Frames 2–11**: Vòng xoáy hút ngược vào tâm, tốc độ xoay cuốn nhanh dần, kích thước thu hẹp mượt mà từng nấc nhỏ.<br>- **Frames 12–15**: Khép sập lại thành vệt chớp sáng lóe lên và bung các hạt bụi sáng tản ra.<br>- **Frame 16**: Tan biến hoàn toàn 100% về màu nền phẳng. | Nối tiếp mượt mà ngay sau khi kết thúc vòng lặp của Tấm 2. |
 
-### Nguyên tắc bất biến về màu nền:
-1. **Nền phẳng tuyệt đối (Pure Solid Flat)**: Chỉ duy nhất 1 mã màu đồng nhất, không gradient, không bóng đổ (drop shadow), không vignette, không vết loang.
-2. **Khóa tràn màu (Zero Color Spill / Zero Bloom Bleed)**: Hiệu ứng phát sáng không được làm lem màu hào quang hòa trộn vào nền. Ranh giới giữa ánh sáng và màu nền phải trong trẻo, sắc nét.
-3. **Cấm dùng màu nền trên chủ thể**: Nếu chọn nền Green `#00FF00`, tuyệt đối không dùng sắc xanh lá trên hiệu ứng. Nếu chọn nền Black `#000000`, hiệu ứng phải là ánh sáng tự thân rực rỡ, không vẽ khói đen hay bóng xám.
+### 4.2. Mẫu Chuỗi 2: Hiệu Ứng Tác Động Liên Hoàn Nhân Quả (Ví dụ: Sét Đánh Xuống Đất → Nổ Xung Kích Mặt Đất — Chuỗi 2 Tấm Nối Tiếp)
 
----
-
-## 3. Quy Tắc Giới Hạn Bounding Box & Đệm An Toàn (STRICT BBOX CONTAINMENT)
-
-1. **Hiệu ứng phải nằm trọn vẹn 100% bên trong Bounding Box của từng ô**:
-   - Ngay cả ở frame có năng lượng bùng nổ lớn nhất (vòng shockwave lan rộng nhất, tia sáng lóe to nhất), toàn bộ hình ảnh phải **thu nhỏ vừa vặn (scaled down)** để nằm gọn trong tâm ô.
-   - **Khoảng đệm an toàn tối thiểu 20-25% (Safety Margin / Padding)**: Xung quanh 4 phía (trên, dưới, trái, phải) của mỗi frame luôn luôn phải có khoảng trống màu nền bao bọc, tuyệt đối không có hạt hay tia sáng nào chạm tới hoặc tiến sát ranh giới ô.
-2. **CẤM TUYỆT ĐỐI hiện tượng cắt mép (Zero Edge-Clipping)**:
-   - Các vòng shockwave, tia sao, cánh hào quang phải tròn trịa, tự nhiên, không bao giờ được có đường cắt thẳng cụt cạnh do chạm mép ô.
-   - Không được để hiệu ứng của ô này lem sang ô bên cạnh.
+| Thứ Tự Tấm (Sheet) | Vai Trò Trong Chuỗi Hoạt Ảnh | Diễn Biến Chi Tiết Xuyên Suốt 16 Frames Của Tấm Đó | Quy Tắc Khớp Nối Giữa Các Tấm (Continuity Handshake) |
+|---|---|---|---|
+| **Tấm 1 (`Sheet 1: Strike / Descent & Contact`)** | **Pha Giáng Đòn & Chạm Mặt Đất** (16 frames) | - **Frames 1–8**: Tia sét xé toạc từ trên cao lao xuống nhanh dần qua từng frame (phần đáy vẫn trống).<br>- **Frames 9–12**: Đầu tia sét chạm điểm tiếp đất, lóe lên tia lửa điện đầu tiên.<br>- **Frames 13–16**: Luồng sét chính dồn toàn bộ năng lượng xuống điểm chạm, nén thành một **quả cầu plasma điện quang chói lòa trên mặt đất (elip ngang)** chuẩn bị phát nổ. | **Frame 16 của Tấm 1** kết thúc ở trạng thái **Lõi cầu sét nén cực đại tại điểm tiếp đất** để truyền sang Tấm 2 phát nổ. |
+| **Tấm 2 (`Sheet 2: Ground Explosion & Shockwave Decay`)** | **Pha Bùng Nổ Mặt Đất, Sóng Xung Kích & Dư Chấn** (16 frames) | - **Frames 1–4**: Nối tiếp ngay từ lõi cầu sét ở cuối Tấm 1 → phát nổ bung thành vòm hồ quang điện và vòng sóng xung kích elip ngang (`4:1`) đầu tiên.<br>- **Frames 5–10**: Vòng sóng xung kích elip ngang lan rộng ra 2 bên trên mặt sàn vô hình, các nhánh sét con nhảy múa dữ dội bắn ngược lên trên.<br>- **Frames 11–15**: Vòm nổ phân rã thành các tia hồ quang đứt đoạn và hạt điện tích lơ lửng.<br>- **Frame 16**: Tan biến sạch sẽ 100% vào màu nền. | Nối tiếp trực tiếp cú đánh của Tấm 1, tạo thành chuỗi *"Sét đánh → Nổ tung mặt đất"* hoàn chỉnh 32 frames. |
 
 ---
 
-## 4. Quy Tắc CẤM Viền Khung & Cấm Vẽ Mặt Đất Giả (ZERO BORDERS & ZERO PROPS)
+## 5. Quy Tắc Giới Hạn Bounding Box, Đệm An Toàn & CẤM Viền Khung (STRICT BBOX & ZERO BORDERS)
 
-1. **TUYỆT ĐỐI CẤM MỌI DẠNG ĐƯỜNG KẺ & VIỀN Ô (NO BORDERS / NO GRID LINES)**:
+1. **Hiệu ứng nằm trọn vẹn 100% bên trong vùng an toàn của từng frame**:
+   - **Khoảng đệm an toàn tối thiểu 25-30% (Safety Margin / Padding)** quanh mỗi frame.
+   - **CẤM TUYỆT ĐỐI hiện tượng cắt mép (Zero Edge-Clipping)**: Tia sáng phản chiếu phải là tia ngắn gọn (`short, compact tapering rays fading out smoothly`) để không chạm vào frame bên cạnh.
+2. **TUYỆT ĐỐI CẤM MỌI DẠNG ĐƯỜNG KẺ & VIỀN Ô (NO BORDERS / NO GRID LINES)**:
    - `Strictly NO grid lines, NO black lines, NO borders, NO divider lines, NO box outlines, NO separator lines, NO numbers, NO text. All 16 frames float freely in open space on one single seamless unbroken flat background`.
-   - **CẤM DÙNG TỪ `"cell"` / `"each cell"` / `"per cell"` / `"grid box"` TRONG PROMPT**: Việc dùng từ `"cell"` trong prompt tiếng Anh sẽ kích hoạt AI vẽ khung kẻ ô bàn cờ! Bắt buộc dùng `"around every isolated frame"` hoặc `"floating freely in open space with 30% empty background margin"`.
-   - **Giới hạn độ dài tia sáng phản chiếu (`Short Compact Tapering Rays`)**: Mọi tia sáng phụt lên (Mặt đất), giáng xuống (Trên trời), hay bắn ngang (Bên trái/Bên phải) phải được mô tả là `"short, compact tapering light rays fading out quickly inside the safe margin"` để không bao giờ kéo dài chạm vào frame bên cạnh.
-   - Toàn bộ khoảng cách giữa các frame là **màu nền thuần chất, liền mạch và liên tục**.
-2. **TUYỆT ĐỐI CẤM ĐƯỜNG KẺ MẶT ĐẤT HOẶC BỐI CẢNH (NO GROUND LINE / NO HORIZON / NO PROPS)**:
-   - Cấm vẽ đường chân trời, vạch kẻ ngang đáy, sàn nhà, cỏ, đá, tường hay vết nứt địa hình cố định.
-   - Hướng không gian của hiệu ứng phải được thể hiện **100% thông qua hình học thấu thị (Perspective Foreshortening) và phản chiếu ánh sáng theo góc nhìn mắt con người**.
+   - **CẤM DÙNG TỪ `"cell"` / `"each cell"` / `"per cell"` / `"grid box"` TRONG PROMPT**: Từ `"cell"` kích hoạt AI vẽ khung kẻ ô bàn cờ! Bắt buộc dùng `"around every isolated frame"` hoặc `"floating freely in open space"`.
+3. **TUYỆT ĐỐI CẤM ĐƯỜNG KẺ MẶT ĐẤT HOẶC BỐI CẢNH (NO GROUND LINE / NO HORIZON / NO PROPS)**:
+   - Cấm vẽ đường chân trời, vạch kẻ ngang đáy, sàn nhà, cỏ, đá, tường.
 
 ---
 
-## 5. Quy Tắc Phối Cảnh & Phản Chiếu Theo Góc Nhìn Mắt Người Cho 5 Hướng Không Gian (HUMAN EYE-LEVEL PERSPECTIVE & OPTICAL REFLECTION RULES)
+## 6. Quy Tắc Phối Cảnh & Phản Chiếu Theo Góc Nhìn Mắt Người Cho 5 Hướng Không Gian (HUMAN EYE-LEVEL PERSPECTIVE & OPTICAL REFLECTION RULES)
 
-> ⚠️ **LỖI NGHIÊM TRỌNG CẦN TRIỆT TIÊU ("PERSPECTIVE DRIFT" GIỮA CÁC FRAME)**:
-> Khi tạo hiệu ứng có hướng không gian (như cổng dịch chuyển ở mặt đất, trên trời, bên trái, bên phải), AI rất hay vẽ đúng hình elip ở Frame 1–5 và 13–16 (khi hiệu ứng còn nhỏ), nhưng **đến Frame 6–12 (khi hiệu ứng mở cực đại / Full Aperture) lại bị trôi góc nhìn thành HÌNH TRÒN CHÍNH DIỆN (`1:1 front-facing circle`)**!
-> **Nguyên nhân**: Do trong prompt dùng các từ như `"circular swirl"`, `"expands into a circle"`, hoặc quên khóa tỉ lệ nén phối cảnh (`foreshortened aspect ratio`) ở các frame giữa (Frames 6–12).
-
-Để AI hình dung chuẩn xác theo **góc nhìn mắt con người (Human Eye-Level Optical Perspective)** và **phản chiếu ánh sáng/chiều sâu** của vật thể trong không gian 3D chiếu lên mặt phẳng 2D, **BẮT BUỘC** áp dụng đúng ma trận 5 hướng nhìn dưới đây:
-
-### 5.1. Bảng Ma Trận Hình Học Phối Cảnh & Phản Chiếu Theo Mắt Người (5 Hướng Chuẩn)
+> ⚠️ **CHỐNG TRÔI GÓC NHÌN ("ANTI-PERSPECTIVE DRIFT")**:
+> Ở tất cả các tấm (Tấm 1 Mở, Tấm 2 Duy trì xoáy, Tấm 3 Đóng) và ở tất cả 16 frames trong mỗi tấm, **BẮT BUỘC giữ nguyên tỉ lệ nén phối cảnh theo góc nhìn mắt người**, tuyệt đối không để các frame mở to tự xoay thành hình tròn chính diện!
 
 | Hướng Yêu Cầu | Góc Mắt Người Nhìn & Phối Cảnh (Human Eye Viewpoint) | Hình Dạng & Tỉ Lệ Khóa Cứng Xuyên Suốt 16 Frames (Foreshortening Lock) | Quy Luật Phản Chiếu, Viền Xa-Gần & Hướng Phóng Năng Lượng (Optical Reflection, Rim Depth & Emission Vector) | Từ Ngữ CẤM Dùng Trong Prompt |
 |---|---|---|---|---|
-| **1. Hướng Mặt Đất / Dưới Sàn (`GROUND / FLOOR PLANE`)** | Mắt người đứng nhìn chếch xuống mặt sàn vô hình ở góc nghiêng thấp `~15°–20°` (High-angle oblique floor view). | **Elip Dẹp Nằm Ngang (`Pancake-Flat Horizontal Ellipse`)**.<br>- Trục ngang rộng gấp **3.5 đến 4 lần** trục dọc (`W : H = 4 : 1`).<br>- **Bắt buộc giữ nguyên độ dẹp `4:1` ở TẤT CẢ 16 frames** (kể cả Frames 6–12 khi mở lớn nhất). Khi nở to, elip chỉ bè rộng sang 2 bên, **TUYỆT ĐỐI KHÔNG cao phồng lên thành hình tròn**. | - **Viền gần mắt (Cạnh dưới elip)**: Dày hơn, sáng rực hơn (intense foreground specular highlight).<br>- **Viền xa mắt (Cạnh trên elip)**: Mảnh hơn do xa mắt, lộ rõ phần thành trong phía xa (recessed inner back wall) tạo độ hút sâu xuống mặt sàn.<br>- **Phản chiếu & Tia phụt (Normal Vector)**: Cột sáng, tia hào quang, vòng phản chiếu phụ và hạt năng lượng **phụt thẳng đứng từ dưới LÊN TRÊN (`strictly vertical 90° upward rays rising from the flat floor ellipse`)**. Đáy dưới phẳng lì áp sát mặt đất vô hình. | CẤM dùng: `circular`, `circle`, `round swirl`, `spherical`, `front-facing`. |
-| **2. Hướng Trên Trời / Trần Nhà (`SKY / OVERHEAD / CEILING PLANE`)** | Mắt người đứng dưới đất ngước nhìn chếch lên bầu trời / trần vô hình ở góc `~15°–20°` (Low-angle worm's-eye upward view). | **Elip Dẹp Nằm Ngang (`Pancake-Flat Horizontal Ellipse`)** đặt ở nửa trên của vùng an toàn ô.<br>- Tỉ lệ Rộng : Cao = `3.5 : 1` đến `4 : 1` khóa cứng xuyên suốt 16 frames.<br>- Không bao giờ biến thành hình tròn 1:1 ở các frame giữa. | - **Góc nhìn ngước từ dưới lên lòng cổng (Underside Vault View)**: Mắt người nhìn thấy **đáy/vòm trong phía trên** của cổng trời.<br>- **Viền dưới (gần mắt hơn)** sáng rõ, vòng xoáy hút ngược lên phía trên.<br>- **Phản chiếu & Tia giáng (Normal Vector)**: Tia sáng, luồng hào quang, tia sét và hạt năng lượng **giáng thẳng đứng từ lòng elip XUỐNG DƯỚI (`strictly vertical 90° downward-projecting light beams & falling particles descending from the upper ellipse`)**. | CẤM dùng: `circular`, `circle`, `round`, `upward rays`, `front-facing`. |
-| **3. Hướng Bên Trái (`LEFT-SIDE VERTICAL PLANE`)** | Mặt phẳng hiệu ứng **dựng đứng vuông góc với mặt đất ở phía bên trái**, mắt người nhìn nghiêng vào mặt phẳng dọc đó (Side-angled perspective looking at a vertical plane on the left, facing right `3 o'clock` hoặc facing left `9 o'clock`). | **Elip Hẹp Dựng Đứng (`Narrow Standing Vertical Ellipse`)**.<br>- Trục dọc cao gấp **3.5 đến 4 lần** trục ngang (`W : H = 1 : 4`, cao và hẹp ngang).<br>- **Khóa cứng tỉ lệ hẹp ngang `1:4` xuyên suốt cả 16 frames**. Khi đạt cực đại (Frames 7–9), cổng mở cao theo chiều dọc nhưng vẫn hẹp ngang, **không bao giờ phình ngang thành hình tròn**. | - **Mặt cổng hướng sang Phải (Left-to-Right Portal/Shield)**: Cạnh viền gần mắt người dày và chói sáng hơn; cạnh viền xa mảnh hơn, để lộ thành trong của hố xoáy hướng về bên phải (3 giờ).<br>- **Phản chiếu & Luồng phóng (Normal Vector)**: Các tia sáng, luồng xung kích và hạt năng lượng **bắn ngang theo phương ngang từ Trái sang Phải (`strictly horizontal rays/streams shooting left-to-right perpendicular to the vertical ellipse`)** (hoặc từ Phải sang Trái nếu mặt cổng quay về hướng 9 giờ). | CẤM dùng: `circular`, `circle`, `round`, `horizontal ellipse`, `front-facing`. |
-| **4. Hướng Bên Phải (`RIGHT-SIDE VERTICAL PLANE`)** | Mặt phẳng hiệu ứng **dựng đứng vuông góc với mặt đất ở phía bên phải**, mắt người nhìn nghiêng vào mặt phẳng dọc bên phải (Side-angled perspective looking at a vertical plane on the right, mặt hướng sang Trái `9 o'clock` hoặc sang Phải `3 o'clock`). | **Elip Hẹp Dựng Đứng (`Narrow Standing Vertical Ellipse`)**.<br>- Trục dọc cao gấp **3.5 đến 4 lần** trục ngang (`W : H = 1 : 4`, cao và hẹp ngang).<br>- **Khóa cứng tỉ lệ `1:4` xuyên suốt cả 16 frames**, tuyệt đối không biến thành hình tròn 1:1 ở các frame giữa. | - **Mặt cổng hướng sang Trái (Right-to-Left Portal/Shield)**: Cạnh viền gần mắt người dày và sáng gắt hơn; thành trong của hố xoáy lõm sâu về bên phải, mặt mở hướng về bên trái (9 giờ).<br>- **Phản chiếu & Luồng phóng (Normal Vector)**: Các tia sáng, sóng xung kích và hạt năng lượng **phóng ngang từ Phải sang Trái (`strictly horizontal rays/streams shooting right-to-left perpendicular to the vertical ellipse`)** (hoặc sang phải nếu mặt cổng hướng 3 giờ). | CẤM dùng: `circular`, `circle`, `round`, `horizontal ellipse`, `front-facing`. |
-| **5. Hướng Chính Diện (`FRONT-FACING / DIRECT 0° VIEW`)** | Mặt phẳng hiệu ứng **đối diện trực tiếp 100% với mắt người** (vuông góc hoàn toàn với trục nhìn camera `0° Orthographic Front View`). | **Hình Tròn Đối Xứng Tâm Hoàn Hảo (`Perfect 1:1 Front-Facing Circle`)**.<br>- Tỉ lệ Rộng : Cao = `1 : 1` đồng nhất xuyên suốt 16 frames. | - **Chiều sâu đồng tâm (Concentric Tunnel Depth)**: Tâm xoáy nằm chính giữa, hút thẳng vào chiều sâu màn hình (trục Z).<br>- **Phản chiếu & Tỏa sáng**: Độ dày viền đều nhau 360°, các tia sáng, tua năng lượng và sóng xung kích **tỏa tròn đều 360° ra mọi phía (`360-degree radial symmetry`)**. | CẤM dùng: `flat ellipse`, `foreshortened`, `tilted`. |
-
----
-
-### 5.2. Ba Luật Bắt Buộc Khi Viết Prompt Để Chống Trôi Góc Nhìn Ở Frames 6–12 (Anti-Perspective-Drift Laws)
-
-1. **LUẬT 1 — Khóa Tỉ Lệ Hình Học Ngay Đầu Prompt & Lặp Lại Ở Mọi Cụm Frame (`PER-STAGE GEOMETRY LOCK`)**:
-   - Không bao giờ chỉ viết quy tắc phối cảnh ở đầu prompt rồi bỏ trống ở phần `Temporal Animation Progression`.
-   - Trong mô tả của **từng giai đoạn** (`Frames 1-3`, `Frames 4-6`, `Frames 7-9`, `Frames 10-12`, `Frames 13-16`), **BẮT BUỘC phải ghi rõ tỉ lệ elip và mệnh lệnh cấm xoay về chính diện**:
-     - *Ví dụ đúng cho Hướng Mặt Đất ở Frames 7–9*:
-       `Frames 7 to 9 (Full Aperture): The ground portal reaches its widest horizontal span while remaining STRICTLY LOCKED as a pancake-flat foreshortened horizontal ellipse (4:1 width-to-height ratio, flat on the invisible floor, NEVER a round circle or front-facing swirl), with vertical cyan light rays rising straight upward.`
-     - *Ví dụ SAI (gây lỗi Frame 6–12 quay về chính diện)*:
-       `Frames 4 to 6: The ellipse expands into a circular swirl... Frames 7 to 9: The warp gate reaches maximum size...`
-
-2. **LUẬT 2 — Mô Tả Rõ Phản Chiếu Cạnh Gần / Cạnh Xa Theo Mắt Người (`HUMAN-EYE FOREGROUND/BACKGROUND RIM CUES`)**:
-   - Để AI vẽ ra đúng chiều sâu 3D như mắt người nhìn ngoài đời thực, prompt phải mô tả sự khác biệt quang học giữa cạnh gần mắt và cạnh xa mắt:
-     - **Mặt Đất**: `"Viewed from a low grazing human eye angle (~15° above floor): the front/bottom rim of the flat horizontal ellipse is thicker and brighter cyan, while the back/top rim is thinner and reveals the recessed inner vortex wall."`
-     - **Trên Trời**: `"Viewed from a human looking steeply upward at the sky: we see the underside of the flat horizontal overhead ellipse, with the lower/near rim brighter and vertical light beams pouring straight down from inside the vortex."`
-     - **Bên Trái / Bên Phải**: `"Viewed from human eye level looking at a vertical plane standing perpendicular to the floor on the left/right: the portal is compressed horizontally into a narrow 1:4 vertical standing ellipse, showing the recessed inner rim depth and horizontal energy beams shooting across."`
-
-3. **LUẬT 3 — Khóa Hướng Pháp Tuyến Của Tia Phản Chiếu / Hạt Phụ (`NORMAL VECTOR EMISSION LOCK`)**:
-   - Mọi tia sáng (light rays), cột năng lượng (pillars), bụi sáng (sparks/particles) thoát ra từ bề mặt hiệu ứng phải đi theo hướng vuông góc (`90° normal vector`) với mặt phẳng đó:
-     - **Mặt đất** → Bắn thẳng lên trời (`90° vertical upward rays`).
-     - **Trên trời** → Giáng thẳng xuống đất (`90° vertical downward rays`).
-     - **Bên trái (nhìn sang phải)** → Phóng ngang từ trái qua phải (`horizontal left-to-right rays`).
-     - **Bên phải (nhìn sang trái)** → Phóng ngang từ phải qua trái (`horizontal right-to-left rays`).
-     - **Chính diện** → Tỏa tròn 360° (`radial 360° outward burst`).
-
----
-
-## 6. Quy Tắc Nhân Quả Thời Gian 16 Frames (Strict Temporal Causality)
-
-- **Frames 1 - 3 (Khởi đầu - Ignition/Opening)**: Xuất hiện khe sáng/điểm năng lượng ban đầu đúng theo trục phối cảnh đã khóa (ví dụ: khe sáng ngang dẹp cho Mặt đất/Trên trời; khe sáng dọc hẹp cho Trái/Phải; điểm sáng tròn cho Chính diện).
-- **Frames 4 - 6 (Mở rộng - Foreshortened Expansion)**: Hiệu ứng mở rộng kích thước **nhưng giữ nguyên 100% tỉ lệ nén phối cảnh (`4:1` hoặc `1:4` hoặc `1:1`)**, tuyệt đối không tự ý xoay mặt phẳng về hướng camera.
-- **Frames 7 - 9 (Cực đại - Peak Brilliance/Full Aperture)**: Đạt đỉnh điểm năng lượng và kích thước lớn nhất trong vùng an toàn (safe area 25% margin), **vẫn khóa cứng hình dạng phối cảnh (elip ngang dẹp / elip dọc hẹp / tròn chính diện)** kèm các tia phản chiếu/cột sáng phóng theo đúng vector pháp tuyến.
-- **Frames 10 - 12 (Thu hẹp / Phân rã - Contraction/Decay)**: Thu nhỏ dần hoặc đứt gãy thành các tia/hạt năng lượng nhưng **vẫn giữ đúng mặt phẳng phối cảnh**, không bị tròn hóa.
-- **Frames 13 - 16 (Tàn lụi & Tan biến - Clean Fadeout)**: Khép lại thành vệt sáng mảnh đúng trục phối cảnh rồi tan biến sạch sẽ 100% vào màu nền thuần khiết ở Frame 16.
+| **1. Hướng Mặt Đất / Dưới Sàn (`GROUND / FLOOR PLANE`)** | Mắt người đứng nhìn chếch xuống mặt sàn vô hình ở góc nghiêng thấp `~15°–20°`. | **Elip Dẹp Nằm Ngang (`Pancake-Flat Horizontal Ellipse`, `W : H = 4 : 1`)**.<br>Khóa cứng tỉ lệ `4:1` ở cả 16 frames của mọi tấm. | - **Viền dưới (gần mắt)**: Dày và sáng rực hơn.<br>- **Viền trên (xa mắt)**: Mảnh hơn, lộ thành trong phía xa (recessed inner back wall).<br>- **Tia phản chiếu & Hạt xoáy**: Phụt **thẳng đứng từ dưới LÊN TRÊN (`90° vertical upward dancing rays & rising sparks`)**. | CẤM: `circular`, `circle`, `round`, `front-facing`. |
+| **2. Hướng Trên Trời / Trần Nhà (`SKY / OVERHEAD PLANE`)** | Mắt người đứng dưới đất ngước nhìn chếch lên bầu trời ở góc `~15°–20°`. | **Elip Dẹp Nằm Ngang (`Pancake-Flat Horizontal Ellipse`, `W : H = 4 : 1`)**. | - **Nhìn ngước vào lòng vòm trên (Underside Vault View)**: Thấy đáy xoáy lõm lên trên.<br>- **Tia phản chiếu & Hạt xoáy**: Giáng **thẳng đứng từ trên XUỐNG DƯỚI (`90° vertical downward rays & falling sparks`)** bên dưới đĩa elip. | CẤM: `circular`, `circle`, `round`, `upward rays`, `front-facing`. |
+| **3. Hướng Bên Trái (`LEFT-SIDE VERTICAL PLANE`)** | Mặt phẳng cổng **dựng đứng vuông góc mặt đất ở bên trái**, mặt mở hướng sang Phải (`3 o'clock`), mắt người nhìn nghiêng vào mặt phẳng dọc đó. | **Elip Hẹp Dựng Đứng (`Narrow Standing Vertical Ellipse`, `W : H = 1 : 4`)**. | - **Viền trái (gần mắt)**: Sáng dày hơn; thành trong mở về bên phải.<br>- **Tia phản chiếu & Hạt xoáy**: Phóng **ngang từ Trái sang Phải (`horizontal left-to-right dancing rays & streaming sparks`)**. | CẤM: `circular`, `circle`, `round`, `horizontal ellipse`, `front-facing`. |
+| **4. Hướng Bên Phải (`RIGHT-SIDE VERTICAL PLANE`)** | Mặt phẳng cổng **dựng đứng vuông góc mặt đất ở bên phải**, mặt mở hướng sang Trái (`9 o'clock`), mắt người nhìn nghiêng vào mặt phẳng dọc đó. | **Elip Hẹp Dựng Đứng (`Narrow Standing Vertical Ellipse`, `W : H = 1 : 4`)**. | - **Viền phải (gần mắt)**: Sáng dày hơn; thành trong mở về bên trái.<br>- **Tia phản chiếu & Hạt xoáy**: Phóng **ngang từ Phải sang Trái (`horizontal right-to-left dancing rays & streaming sparks`)**. | CẤM: `circular`, `circle`, `round`, `horizontal ellipse`, `front-facing`. |
+| **5. Hướng Chính Diện (`FRONT-FACING / DIRECT 0° VIEW`)** | Mặt phẳng hiệu ứng **đối diện trực tiếp 100% với mắt người (`0° Front View`)**. | **Hình Tròn Đối Xứng Tâm (`Perfect 1:1 Circle`, `W : H = 1 : 1`)**. | - Tâm xoáy hút thẳng vào trục Z màn hình.<br>- Cánh xoáy và tua năng lượng **xoay tròn & tỏa đều 360° (`360° radial rotational symmetry`)**. | CẤM: `flat ellipse`, `foreshortened`, `tilted`. |
 
 ---
 
 ## 7. Quy Trình Kiểm Tra Nghiệm Thu Ảnh (Mandatory Visual Verification Checklist)
 
-Sau khi gửi prompt lên Flow và tải ảnh về, AI **BẮT BUỘC phải mở ảnh lên kiểm tra từng frame (từ Frame 1 đến Frame 16)** theo 4 tiêu chí nghiệm thu:
-1. **Kiểm tra Khóa Phối Cảnh ở Frames 6–12 (Mid-Sequence Perspective Check)**:
-   - Nếu yêu cầu **Mặt đất / Trên trời**: Các frame 6, 7, 8, 9, 10, 11, 12 có bị phồng dọc thành hình tròn chính diện không? Nếu bất kỳ frame nào ở giữa bị biến thành hình tròn `1:1` (nhìn chính diện) → **ĐÁNH RỚT (FAIL)**, phải siết lại từ khóa `"pancake-flat 4:1 horizontal ellipse in EVERY single frame including frames 6 to 12, ZERO circular shape"` và tạo lại!
-   - Nếu yêu cầu **Bên trái / Bên phải**: Các frame 6–12 có giữ đúng hình **elip hẹp dựng đứng (`1:4 vertical ellipse`)** cùng hướng phóng tia sáng ngang không? Nếu bị biến thành hình tròn chính diện → **ĐÁNH RỚT (FAIL)** và tạo lại!
-   - Nếu yêu cầu **Chính diện**: Cả 16 frames phải là hình tròn `1:1` đồng tâm đối xứng hoàn hảo.
-2. **Kiểm tra Phản Chiếu & Hướng Tia Năng Lượng (Eye-Level Reflection & Rays)**:
-   - Mặt đất: Tia sáng phụt **lên trên**; viền dưới sáng dày hơn viền trên.
-   - Trên trời: Tia sáng giáng **xuống dưới**; nhìn thấy lòng cổng từ dưới lên.
-   - Trái / Phải: Tia sáng phóng **ngang** vuông góc với mặt elip dựng đứng.
-3. **Kiểm tra Nền Chroma & Không Tràn Màu (Chroma Purity)**: Nền phẳng 100%, không viền ô, không vạch kẻ đất.
-4. **Kiểm tra Bounding Box**: Không frame nào bị cắt cụt mép (zero clipping).
+Sau khi gửi prompt lên Flow và tải ảnh về, AI **BẮT BUỘC mở ảnh lên kiểm tra từng frame** theo 5 tiêu chí:
+1. **Độ mượt chuyển động giữa các frame (`Kinetic Fluidity`)**: Các cánh xoáy, lưỡi plasma, tia sáng và hạt năng lượng có thực sự xoay góc / dịch chuyển vị trí từ frame này sang frame kế tiếp không, hay chỉ là 1 ảnh tĩnh bị phóng to thu nhỏ? Nếu bị tĩnh đơ → phải tăng cường mô tả góc xoay từng cụm frame (`12h->3h->6h->9h`) và tạo lại!
+2. **Đúng vai trò trong Chuỗi Nối Tiếp (`Multi-Sheet Continuity`)**:
+   - Tấm Mở (`Sheet 1`): Mở dần từ nhỏ đến to, kết thúc ở Frame 16 là đang mở 100% (không bị đóng lại).
+   - Tấm Duy trì (`Sheet 2`): Cả 16 frames đều mở to đều nhau và xoay vòng liên tục.
+   - Tấm Đóng (`Sheet 3`): Bắt đầu từ mở to ở Frame 1 rồi thu nhỏ dần và tắt hẳn ở Frame 16.
+   - Chuỗi Tác động (như Sét đánh → Nổ): Tấm 1 giáng xuống chạm đất, Tấm 2 bùng nổ sóng xung kích từ điểm chạm.
+3. **Khóa Phối Cảnh 5 Hướng Mắt Người**: Tuyệt đối không trôi góc nhìn ở các frame giữa.
+4. **Màu nền phẳng & Không trùng màu chi tiết**: Nền đồng nhất 100%, không đường kẻ lưới (`zero grid lines`).
+5. **Bounding Box**: Không bị cắt cụt mép (`zero clipping`).

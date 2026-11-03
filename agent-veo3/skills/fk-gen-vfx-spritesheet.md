@@ -1,181 +1,131 @@
 ---
 name: vfx-animation-spritesheet
-description: Tạo ảnh 16-Frame VFX Animation Sprite Sheet (lưới 4x4 tỉ lệ 1:1) trên Google Flow với khóa phối cảnh mắt người chuẩn xác cho 5 hướng (Mặt đất, Trên trời, Bên trái, Bên phải, Chính diện), tự động tải ảnh về và kiểm tra nghiệm thu.
+description: Tạo chuỗi ảnh 16-Frame VFX Animation Sprite Sheet (Multi-Sheet Sequential Chain: Mở -> Xoáy lặp -> Đóng, hoặc Giáng đòn -> Bùng nổ) trên Google Flow với chuyển động xoay/biến hình mượt mà qua từng frame, khóa phối cảnh 5 hướng mắt người và chọn màu nền phẳng không trùng chi tiết.
 ---
 
-# Kỹ Năng Tạo VFX Animation Sprite Sheet 16 Frames Theo 5 Hướng Mắt Người (`/fk-gen-vfx-spritesheet`)
+# Kỹ Năng Tạo Chuỗi VFX Animation Sprite Sheet Mượt Mà & Nối Tiếp (`/fk-gen-vfx-spritesheet`)
 
-Kỹ năng này kết hợp trực tiếp với rule `.agents/rules/vfx_animation_spritesheet.md` để tạo **16-Frame VFX Sprite Sheet (4×4 Grid, 1:1 Square)** trên Google Flow (`POST http://127.0.0.1:8100/flow/generate-image`), sau đó **bắt buộc tải ảnh về kiểm tra trực quan (visual verification)** xem toàn bộ 16 frames (đặc biệt là các frame giữa 6–12) có giữ đúng góc nhìn phối cảnh mắt người, không kẻ khung viền và không chạm mép hay không.
-
----
-
-## 1. Nguyên Tắc Cốt Lõi: Hình Dung Theo Góc Mắt Con Người & Phản Chiếu Quang Học
-
-Khi hiệu ứng nằm trên nền Chroma phẳng (không có sàn đất hay tường thật), mắt người nhận biết hướng của hiệu ứng dựa trên **Độ nén thấu thị (Foreshortening Ratio)**, **Độ dày/sáng của viền gần so với viền xa (Near/Far Rim Reflection)** và **Hướng phóng tia sáng vuông góc với mặt phẳng (Normal Emission Vector)**:
-
-1. **Hướng Mặt Đất (`GROUND / FLOOR PLANE`)**:
-   - **Hình học khóa cứng 16/16 frames**: Hình **Elip Dẹp Nằm Ngang (`Pancake-Flat Horizontal Ellipse`, tỉ lệ Rộng:Cao = `4:1`)**.
-   - **Phản chiếu mắt người**: Nhìn từ trên chếch xuống sàn (~15°–20°). Viền dưới (gần mắt) dày và sáng rực hơn viền trên (xa mắt); thấy thành trong phía xa của hố xoáy; các tia sáng/cột năng lượng ngắn gọn **phụt thẳng đứng từ dưới LÊN TRÊN (`90° vertical upward rays`)**.
-   - **CẤM TUYỆT ĐỐI** dùng từ `circular`, `circle`, `round` khiến Frame 6–12 bị dựng đứng thành hình tròn chính diện.
-
-2. **Hướng Trên Trời (`SKY / OVERHEAD / CEILING PLANE`)**:
-   - **Hình học khóa cứng 16/16 frames**: Hình **Elip Dẹp Nằm Ngang (`Pancake-Flat Horizontal Ellipse`, tỉ lệ Rộng:Cao = `4:1`)**.
-   - **Phản chiếu mắt người**: Nhìn từ dưới đất ngước lên đáy cổng trên trời (~15°–20°). Thấy lòng vòm bên trong từ dưới nhìn lên; các tia sáng/hạt năng lượng ngắn gọn **giáng thẳng đứng từ trên XUỐNG DƯỚI (`90° vertical downward rays`)** bên dưới đĩa elip.
-
-3. **Hướng Bên Trái (`LEFT-SIDE VERTICAL PLANE` — Cổng dựng đứng bên trái, hướng sang phải)**:
-   - **Hình học khóa cứng 16/16 frames**: Hình **Elip Hẹp Dựng Đứng (`Narrow Standing Vertical Ellipse`, tỉ lệ Rộng:Cao = `1:4`, cao gấp 4 lần rộng)**.
-   - **Phản chiếu mắt người**: Mặt phẳng cổng dựng đứng vuông góc mặt đất ở bên trái, mặt xoáy nhìn sang bên phải (hướng 3 giờ). Viền trái (gần mắt) sáng dày hơn, thấy lòng thành trong mở sang bên phải; tia sáng ngắn gọn **phóng ngang từ Trái sang Phải (`horizontal left-to-right emission`)**.
-
-4. **Hướng Bên Phải (`RIGHT-SIDE VERTICAL PLANE` — Cổng dựng đứng bên phải, hướng sang trái)**:
-   - **Hình học khóa cứng 16/16 frames**: Hình **Elip Hẹp Dựng Đứng (`Narrow Standing Vertical Ellipse`, tỉ lệ Rộng:Cao = `1:4`, cao gấp 4 lần rộng)**.
-   - **Phản chiếu mắt người**: Mặt phẳng cổng dựng đứng vuông góc mặt đất ở bên phải, mặt xoáy nhìn sang bên trái (hướng 9 giờ). Viền phải (gần mắt) sáng dày hơn, thấy lòng thành trong mở sang bên trái; tia sáng ngắn gọn **phóng ngang từ Phải sang Trái (`horizontal right-to-left emission`)**.
-
-5. **Hướng Chính Diện (`FRONT-FACING / DIRECT 0° VIEW`)**:
-   - **Hình học khóa cứng 16/16 frames**: **Hình Tròn Đối Xứng Tâm Hoàn Hảo (`Perfect 1:1 Front-Facing Circle`, tỉ lệ `1:1`)**.
-   - **Phản chiếu mắt người**: Nhìn thẳng trực diện 0° vào tâm hố xoáy; chiều sâu hút thẳng vào màn hình; tua năng lượng ngắn gọn **tỏa tròn đều 360° (`radial symmetry`)**.
-
-> ⚠️ **LƯU Ý CHỐNG VẼ ĐƯỜNG KẺ Ô (`ANTI-GRID-LINE LOCK`)**:
-> Tuyệt đối **KHÔNG dùng từ `"cell"`, `"each cell"`, `"per cell"`, `"grid box"`** trong prompt tiếng Anh vì từ `"cell"` sẽ khiến AI vẽ đường kẻ khung đen/hồng chia 16 ô! Hãy luôn dùng: `"All 16 frames float freely in open space on one single seamless unbroken #FF00FF magenta background with a minimum 30% empty magenta safety margin around every frame."`
+Kỹ năng này kết hợp trực tiếp với rule `.agents/rules/vfx_animation_spritesheet.md` để tạo **Chuỗi 16-Frame VFX Sprite Sheet Nối Tiếp (Multi-Sheet Sequential Chain)** trên Google Flow (`POST http://127.0.0.1:8100/flow/generate-image`), khắc phục triệt để 2 lỗi:
+1. **Lỗi chuyển động đơ/cứng ngắc (Static Scaling)**: Bắt buộc mỗi frame kế tiếp phải có **bước xoay góc (`+22.5°/frame`)**, **vệt mờ chuyển động cong (`swirling motion-blur trails`)**, và **tia sáng nhảy múa cao thấp lệch pha (`flickering alternating rays`)**.
+2. **Lỗi thiếu nối tiếp / nhồi nhét quá nhiều pha vào 1 tấm**: Chia hiệu ứng thành **Chuỗi nhiều tấm ảnh 16 frames nối tiếp nhau (Multi-Sheet Chain)**:
+   - **Với Cổng Dịch Chuyển / Vòng Ma Pháp (3 Tấm nối tiếp)**:
+     - **Tấm 1 (`Sheet 1 - Opening`)**: 16 frames từ vết nứt nhỏ → bung xoáy mở rộng dần → kết thúc ở Frame 16 là **Cổng đang mở 100%** (KHÔNG đóng lại!).
+     - **Tấm 2 (`Sheet 2 - Active Continuous Spinning Loop`)**: Cả 16 frames đều giữ **kích thước mở 100% đồng nhất** và chỉ tập trung **xoay cuộn tròn 360° liên tục** (`+22.5°` mỗi frame, cánh xoáy quét `12h -> 3h -> 6h -> 9h -> 12h`), giúp lặp vô tận cực mượt không bao giờ bị khựng.
+     - **Tấm 3 (`Sheet 3 - Collapse & Closure`)**: Nối tiếp từ Tấm 2 — Frame 1 đang mở to 100% → xoáy hút ngược thu nhỏ dần qua Frames 2–12 → khép thành tia chớp và tan biến ở Frame 16.
+   - **Với Hiệu Ứng Tác Động Liên Hoàn như Sét Đánh → Nổ Mặt Đất (2 Tấm nối tiếp)**:
+     - **Tấm 1 (`Sheet 1 - Lightning Descent & Contact`)**: Tia sét giáng từ trên cao xuống qua từng frame và chạm đất tạo lõi cầu điện nén cực đại ở Frame 15–16.
+     - **Tấm 2 (`Sheet 2 - Ground Impact Explosion & Shockwave`)**: Nối tiếp ngay từ lõi cầu điện ở Frame 16 Tấm 1 → bùng nổ thành vòm điện quang & vòng sóng xung kích elip ngang lan rộng trên mặt đất rồi phân rã tan biến.
 
 ---
 
-## 2. Mẫu Prompt Chuẩn Cho 5 Hướng (Đã Khóa Chống Trôi Góc Nhìn Frames 6–12 & Chống Viền Lưới)
+## 1. Quy Tắc Màu Nền Linh Hoạt (Không Cố Định Tím/Xanh Lá)
 
-### A. Mẫu Prompt Hướng Mặt Đất (`GROUND PLANE`)
+- **KHÔNG bắt buộc dùng nền Tím (`#FF00FF`) hay Xanh lá (`#00FF00`)**.
+- Được phép chọn **bất kỳ màu nền phẳng đơn sắc nào** (ví dụ: Đen tuyền `#000000`, Than chì tối `#141414`, Xanh đêm `#0A0E1A`, Đỏ rượu sẫm `#2A0510`, v.v.) **MIỄN LÀ**:
+  1. Màu nền đó **không trùng với bất kỳ màu chi tiết nào của hiệu ứng**.
+  2. Nền phẳng 100% không viền ô, không kẻ lưới (tuyệt đối không dùng từ `"cell"` trong prompt).
+  3. Các tấm trong cùng 1 chuỗi nối tiếp dùng chung cùng 1 mã màu nền.
+
+---
+
+## 2. Bộ Mẫu Prompt Chuẩn Cho Chuỗi Cổng Dịch Chuyển 3 Tấm (Mặt Đất - Nền Đen `#000000` Hoặc Tùy Chọn)
+
+### Tấm 1: Pha Khởi Tạo & Mở Cổng (`Sheet 1 of 3: Portal Ignition & Opening To Full Size`)
 ```text
-A borderless square 1:1 animation sprite sheet containing exactly 16 separate animation frames of an opening and closing ground-level dimensional warp portal, floating on a continuous unbroken flat magenta #FF00FF canvas, neatly spaced in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
+A borderless square 1:1 animation sprite sheet containing exactly 16 sequential hand-drawn animation frames of PHASE 1 ONLY (IGNITION AND OPENING EXPANSION) of a ground-level dimensional warp portal, floating freely on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
 
-CRITICAL COLOR SEPARATION & ISOLATION:
-- Background: 100% solid flat pure magenta #FF00FF everywhere, completely uniform across the entire image, no gradient, no drop shadow.
-- ZERO-SPILL: Absolutely NO magenta or pink inside the cyan vortex.
-- PURE VFX ONLY: No props, no terrain, no ground lines, no horizon.
+CRITICAL BACKGROUND & ZERO-BORDER CONSTRAINTS:
+- Background: 100% solid flat uniform pure pitch-black #000000 everywhere, no gradient, no floor texture, no horizon line.
+- Strictly NO grid lines, NO borders, NO divider lines, NO box outlines, NO text, NO numbers. All 16 frames float freely in open space with 30% empty black margin around every frame.
 
-ZERO-BORDER & BOUNDING BOX CONSTRAINTS:
-- Strictly NO grid lines, NO black lines, NO borders, NO divider lines, NO box outlines, NO text, NO numbers. All 16 frames float freely on one single seamless unbroken #FF00FF magenta background with a minimum 25% empty magenta safety margin around every frame.
-
-CRITICAL HUMAN-EYE GROUND PERSPECTIVE & 16-FRAME FLAT ELLIPSE LOCK:
+CRITICAL HUMAN-EYE GROUND PERSPECTIVE & 4:1 FLAT ELLIPSE LOCK:
 - Viewed from a fixed low grazing human eye angle (~15 degrees above an invisible floor).
-- In ALL 16 FRAMES (strictly including peak frames 6, 7, 8, 9, 10, 11, 12), the portal MUST remain a VERY FLAT PANCAKE HORIZONTAL ELLIPSE (strictly 4:1 width-to-height ratio, wide horizontally and very compressed/flat vertically) lying flat on the invisible floor.
-- STRICTLY FORBIDDEN to draw a round 1:1 circle or front-facing swirl in ANY frame! Even at maximum size in frames 6 to 12, it ONLY stretches wider horizontally as a flat 4:1 saucer disc and NEVER tilts up toward the camera.
-- HUMAN-EYE OPTICAL REFLECTION: The bottom/front rim (closest to viewer's eye) is thicker and brighter glowing white-cyan, while the top/far rim is thinner and reveals the recessed inner back wall of the vortex. Compact luminous cyan light rays shoot strictly vertically UPWARD (90 degrees straight up) from the flat horizontal ring.
+- Every single frame MUST be a VERY FLAT PANCAKE HORIZONTAL ELLIPSE (strictly 4:1 width-to-height ratio) lying flat on the invisible floor. STRICTLY FORBIDDEN to draw a round 1:1 front-facing circle in any frame.
+- The bottom/front rim is thicker and brighter white-cyan; compact flickering vertical light rays and spiralling sparks rise straight UPWARD (90 degrees vertical) from the flat ring.
 
-Subject & Style: dynamic 2D hand-drawn anime cartoon VFX, spinning plasma whirlpool, luminous cyan rim, deep electric blue vortex core, short rising vertical white-cyan light rays.
-
-Temporal Animation Progression (16 frames - ALL locked to 4:1 flat horizontal ellipse):
-- Frames 1 to 3 (Opening): A thin glowing horizontal slit opens flat on the invisible floor and widens into a small 4:1 flat horizontal ellipse emitting short upward vertical light rays.
-- Frames 4 to 6 (Horizontal Expansion): The flat horizontal ellipse stretches wider left-to-right (strictly maintaining its compressed 4:1 pancake-flat horizontal ratio, ZERO circular shape), with short vertical light rays rising straight up.
-- Frames 7 to 9 (Full Ground Aperture): The ground portal reaches maximum horizontal width while remaining a strictly flattened 4:1 pancake horizontal ellipse lying flat on the floor (NEVER a front-facing circle), spinning with deep recessed inner rim reflection and short vertical upward light beams.
-- Frames 10 to 12 (Horizontal Contraction): The flat 4:1 horizontal elliptical vortex shrinks narrower in width while staying completely flat on the horizontal floor plane, upward rays fading.
-- Frames 13 to 16 (Closure): Collapses back into a thin horizontal spark line and dissolves 100% into pure magenta.
+CRITICAL KINETIC FLUIDITY & CONTINUITY HANDSHAKE (END AT 100% OPEN — DO NOT CLOSE!):
+- Every consecutive frame MUST show active clockwise vortex rotation (+22.5 degrees angular shift per frame) with whipping S-curve plasma arms, curved rotational motion-blur streaks, and orbiting energy sparks shifting position around the elliptical rim.
+- Frame-by-frame progression (16 frames of smooth opening ONLY):
+  - Frames 1 to 4 (Crack & Spark Ignition): A horizontal electric spark cracks open into a tiny swirling 4:1 flat horizontal ellipse, throwing off initial upward sparks as the bright spiral arm sweeps from 12 o'clock to 3 o'clock.
+  - Frames 5 to 8 (Accelerating Swirl Expansion): The flat 4:1 horizontal vortex spins rapidly clockwise (spiral arm sweeping 3 o'clock to 6 o'clock), growing to 50% width with whipping plasma ribbons and dancing upward light rays of alternating heights.
+  - Frames 9 to 12 (Surging Vortex Widening): The flat 4:1 horizontal ellipse expands from 60% to 85% width as the spiral arm sweeps from 6 o'clock to 9 o'clock, shedding swirling trails and rising plasma motes.
+  - Frames 13 to 16 (Reaching 100% Full Open Aperture - STAY OPEN!): The flat 4:1 horizontal ground portal reaches its full 100% maximum width and stabilizes into a fiercely spinning open vortex in Frame 16 (spiral arm completing sweep to 12 o'clock). CRITICAL: Frame 16 MUST REMAIN 100% FULLY OPEN AND LARGE to connect seamlessly into Sheet 2! Strictly DO NOT shrink or close in frames 13-16!
 ```
 
-### B. Mẫu Prompt Hướng Trên Trời (`SKY / OVERHEAD PLANE`)
+### Tấm 2: Pha Duy Trì Vòng Xoáy Liên Tục (`Sheet 2 of 3: Continuous Active Spinning Loop at 100% Full Size — Anti-Frozen-Base Edition`)
 ```text
-A borderless square 1:1 animation sprite sheet containing exactly 16 separate animation frames of an opening and closing sky-high overhead dimensional warp portal, floating on a continuous unbroken flat magenta #FF00FF canvas, neatly spaced in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
+A borderless square 1:1 animation sprite sheet containing exactly 16 sequential hand-drawn animation frames of PHASE 2 (SEAMLESS CONTINUOUS 360-DEGREE SPINNING VORTEX LOOP AT CONSTANT FULL SIZE) of a ground-level dimensional warp portal, floating freely on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
 
-CRITICAL COLOR SEPARATION & ISOLATION:
-- Background: 100% solid flat pure magenta #FF00FF everywhere, completely uniform across the entire image, no gradient, no drop shadow.
-- ZERO-SPILL: Absolutely NO magenta or pink inside the cyan vortex.
-- PURE VFX ONLY: No clouds, no sky, no props, no terrain, no horizon.
+CRITICAL BACKGROUND & ZERO-BORDER CONSTRAINTS:
+- Background: 100% solid flat uniform pure pitch-black #000000 everywhere, no grid lines, no borders, no divider lines, no box outlines, no text. 30% empty black safety margin around every frame.
 
-ZERO-BORDER & BOUNDING BOX CONSTRAINTS:
-- Strictly NO grid lines, NO black lines, NO borders, NO divider lines, NO box outlines, NO text, NO numbers. All 16 frames float freely in open space on one single seamless unbroken #FF00FF magenta background. Every frame (including its light rays) is compact and small with at least 30% empty magenta safety margin on all four sides so nothing ever touches or nears the neighboring frames.
+CRITICAL CONSTANT SIZE LOCK & HUMAN-EYE GROUND PERSPECTIVE:
+- ALL 16 FRAMES (Frame 1 through Frame 16) maintain the EXACT SAME 100% FULL OPEN WIDTH AND SIZE!
+- In all 16 frames, the portal is strictly locked as a 4:1 PANCAKE-FLAT HORIZONTAL ELLIPSE lying flat on an invisible floor (NEVER a round 1:1 front-facing circle).
 
-CRITICAL HUMAN-EYE LOOKING-UP SKY PERSPECTIVE & 16-FRAME FLAT ELLIPSE LOCK:
-- Viewed from a human standing on the ground looking steeply UPWARD (~15 degrees grazing angle) at the underside of a floating overhead portal.
-- In ALL 16 FRAMES (strictly including peak frames 6, 7, 8, 9, 10, 11, 12), the overhead portal ring MUST remain a VERY FLAT PANCAKE HORIZONTAL ELLIPSE (strictly 4:1 width-to-height ratio, wide horizontally and very compressed/flat vertically).
-- STRICTLY FORBIDDEN to draw a round 1:1 front-facing circle in ANY frame!
-- HUMAN-EYE OPTICAL REFLECTION: Looking up into the recessed dark-blue underside of the flat horizontal ring, the upper/far rim arches over the recessed vortex core, and SHORT, COMPACT tapering cyan light rays shine strictly vertically DOWNWARD (90 degrees straight down) underneath the flat horizontal ellipse, fading out quickly so they stay compact and well inside the empty magenta space.
+CRITICAL ANTI-FROZEN-BASE & 100% FLUID TURBULENCE LOCK (NO STATIC SHADOW OR RIGID RING!):
+- STRICTLY FORBIDDEN to draw a rigid unbroken static white oval outline ring! The outer perimeter of the portal MUST be formed 100% by loose, overlapping, whipping S-curve plasma ribbons and jagged swirling energy tongues whose outer tips visibly shift and undulate in every single frame!
+- STRICTLY FORBIDDEN to draw a static vertical background glow curtain, frozen ambient shadow backdrop, or static dark pit! Every layer from the outer whipping ribbons all the way down into the center core MUST actively churn and twist in every frame.
+- Instead of static vertical lines, energy rises as HELICAL CORKSCREWING WISPS and spiralling spark trails whipping diagonally in the clockwise direction of rotation.
 
-Subject & Style: dynamic 2D hand-drawn anime cartoon VFX, spinning plasma whirlpool, luminous cyan rim, deep electric blue recessed underside vortex, short compact downward-pointing white-cyan light rays.
-
-Temporal Animation Progression (16 frames - ALL locked to 4:1 flat horizontal overhead ellipse with short downward rays):
-- Frames 1 to 3 (Opening): A thin glowing horizontal slit opens and widens into a small 4:1 flat horizontal ellipse emitting short faint downward vertical light rays underneath.
-- Frames 4 to 6 (Horizontal Expansion): The flat 4:1 horizontal ellipse stretches wider left-to-right (strictly maintaining its compressed 4:1 pancake-flat horizontal ratio, ZERO circular shape), with short tapering vertical light rays shining straight down from its underside.
-- Frames 7 to 9 (Full Sky Aperture): The overhead portal reaches maximum horizontal width while remaining a strictly flattened 4:1 pancake horizontal ellipse (NEVER a front-facing circle), with short compact vertical cyan light rays shining straight downward underneath the ring.
-- Frames 10 to 12 (Horizontal Contraction): The flat 4:1 horizontal elliptical vortex shrinks narrower in width while downward rays fade.
-- Frames 13 to 16 (Closure): Collapses back into a faint horizontal spark line, then dissolves 100% into pure magenta.
+CRITICAL 3-ARM PINWHEEL 360-DEGREE FRAME-BY-FRAME ROTATION (NO TWO FRAMES AT THE SAME ANGLE!):
+- The vortex is structured as a dynamic 3-ARM LOGARITHMIC PINWHEEL WHIRLPOOL (three blazing white-cyan spiral arms separated by deep electric-blue churning troughs) that rotates smoothly clockwise by 22.5 degrees in EVERY SINGLE FRAME:
+  - Frame 1 (0°), Frame 2 (22.5°), Frame 3 (45°), Frame 4 (67.5°): The 3 spiral plasma arms and their helical rising spark tails sweep progressively clockwise frame-by-frame across the first quarter turn; NO two adjacent frames share the same arm angle!
+  - Frame 5 (90°), Frame 6 (112.5°), Frame 7 (135°), Frame 8 (157.5°): The 3 whipping spiral arms continue rotating smoothly clockwise through the second quarter turn, with outer ribbon tips curling and shedding orbiting sparks along the front and left rims.
+  - Frame 9 (180°), Frame 10 (202.5°), Frame 11 (225°), Frame 12 (247.5°): The 3 spiral arms sweep clockwise through the third quarter turn, churning the inner core and twisting the rising helical wisps.
+  - Frame 13 (270°), Frame 14 (292.5°), Frame 15 (315°), Frame 16 (337.5°): The 3 spiral arms complete the final quarter turn so Frame 16 flows seamlessly back into Frame 1 with zero jump and zero frozen shadow!
 ```
 
-### C. Mẫu Prompt Hướng Bên Trái (`LEFT-SIDE VERTICAL PLANE` — Mặt hướng sang Phải)
+### Tấm 3: Pha Thu Hẹp & Đóng Cổng (`Sheet 3 of 3: Vortex Collapse & Dissipation From Full Size`)
 ```text
-A borderless square 1:1 animation sprite sheet containing exactly 16 separate animation frames of an opening and closing vertical side-angled dimensional warp portal facing right, floating on a continuous unbroken flat magenta #FF00FF canvas, neatly spaced in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
+A borderless square 1:1 animation sprite sheet containing exactly 16 sequential hand-drawn animation frames of PHASE 3 ONLY (IMPLOSION, CONTRACTION AND CLOSURE STARTING FROM 100% FULL SIZE) of a ground-level dimensional warp portal, floating freely on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
 
-CRITICAL COLOR SEPARATION & ISOLATION:
-- Background: 100% solid flat pure neon magenta #FF00FF everywhere, completely uniform brightness across all 16 frames, no dark purple tint, no gradient, no shadow.
-- ZERO-SPILL: Absolutely NO magenta inside the cyan vortex.
-- PURE VFX ONLY: No props, no walls, no terrain.
+CRITICAL BACKGROUND & ZERO-BORDER CONSTRAINTS:
+- Background: 100% solid flat uniform pure pitch-black #000000 everywhere, no grid lines, no borders, no divider lines, no box outlines, no text. 30% empty black safety margin around every frame.
 
-ZERO-BORDER & BOUNDING BOX CONSTRAINTS:
-- Strictly NO grid lines, NO pink or black divider lines, NO borders, NO box outlines, NO separator lines. The entire image is ONE single seamless unbroken flat #FF00FF magenta sheet where the 16 small isolated portals float freely with generous 30% empty magenta margin on all sides.
+CRITICAL HUMAN-EYE GROUND PERSPECTIVE & 4:1 FLAT ELLIPSE LOCK:
+- In all active frames, the portal remains strictly locked as a 4:1 PANCAKE-FLAT HORIZONTAL ELLIPSE lying flat on an invisible floor (NEVER a round 1:1 circle).
 
-CRITICAL HUMAN-EYE LEFT-SIDE PERSPECTIVE & 16-FRAME NARROW VERTICAL ELLIPSE LOCK:
-- Viewed from human eye level looking at a vertical portal plane standing perpendicular to the floor on the left, with its vortex mouth facing RIGHT (towards 3 o'clock).
-- In ALL 16 FRAMES (strictly including peak frames 6, 7, 8, 9, 10, 11, 12), the portal MUST remain a NARROW STANDING VERTICAL ELLIPSE (strictly 1:4 width-to-height ratio — tall vertically and compressed very thin horizontally).
-- STRICTLY FORBIDDEN to draw a round 1:1 front-facing circle or a horizontal ellipse in ANY frame!
-- HUMAN-EYE OPTICAL REFLECTION: The left/front vertical rim (closest to viewer's eye) is thicker and brighter white-cyan, while the right/far vertical rim is thinner and reveals the recessed inner blue vortex wall facing right. SHORT, COMPACT tapering cyan light rays shoot strictly HORIZONTALLY from LEFT TO RIGHT (towards 3 o'clock) from the vertical elliptical ring and fade out quickly inside the safe margin.
-
-Subject & Style: dynamic 2D hand-drawn anime cartoon VFX, tall thin vertical spinning plasma whirlpool, luminous cyan rim, deep electric blue vortex core, short compact horizontal rightward light rays.
-
-Temporal Animation Progression (16 frames - ALL locked to 1:4 narrow standing vertical ellipse facing right):
-- Frames 1 to 3 (Opening): A thin vertical glowing slit opens upright and widens slightly into a small 1:4 narrow standing vertical ellipse emitting short horizontal light rays to the right.
-- Frames 4 to 6 (Vertical Expansion): The narrow 1:4 standing vertical ellipse stretches taller top-to-bottom (strictly maintaining its compressed 1:4 thin vertical ratio, ZERO circular shape), with short horizontal cyan light rays pointing right.
-- Frames 7 to 9 (Full Vertical Aperture): The side portal reaches maximum vertical height while remaining a strictly thin 1:4 standing vertical ellipse facing right (NEVER a front-facing circle), spinning with recessed inner rim depth and short compact horizontal rightward light rays.
-- Frames 10 to 12 (Vertical Contraction): The thin 1:4 standing vertical elliptical vortex shrinks shorter vertically while staying narrow horizontally, rightward rays fading.
-- Frames 13 to 16 (Closure): Snaps shut into a faint vertical spark line, then dissolves 100% into pure magenta.
+CRITICAL CONTINUITY HANDSHAKE (START AT 100% FULL OPEN IN FRAME 1, THEN COLLAPSE):
+- Frame 1 MUST start at 100% FULL OPEN WIDTH (continuing directly from Sheet 2), then progressively spin inward and collapse across the 16 frames:
+  - Frames 1 to 4 (Initial Inward Suction from Full Size): Frame 1 is fully open (100% width) and spinning rapidly; across Frames 2 to 4, the flat 4:1 horizontal vortex begins pulling inward (to 80% width) with inward-curling plasma ribbons and rising sparks being sucked toward the core.
+  - Frames 5 to 8 (Accelerating Vortex Contraction): The spinning flat 4:1 horizontal ellipse rapidly narrows from 70% down to 40% width as the spiral arms whip tightly around the center and upward rays shorten.
+  - Frames 9 to 12 (Implosion & Snap Shut): The flat horizontal vortex collapses into a tight intense horizontal energy slit (Frames 9-10) and snaps shut with a horizontal burst of scattering cyan electric sparks (Frames 11-12).
+  - Frames 13 to 16 (Spark Dissipation & Clean Fadeout): Lingering horizontal electric sparks and tiny glowing motes scatter and fade out (Frames 13-15), leaving Frame 16 completely 100% empty pitch-black #000000.
 ```
 
-### D. Mẫu Prompt Hướng Bên Phải (`RIGHT-SIDE VERTICAL PLANE` — Mặt hướng sang Trái)
+---
+
+## 3. Bộ Mẫu Prompt Chuẩn Cho Chuỗi Nhân Quả: Sét Đánh Xuống Đất → Nổ Xung Kích Mặt Đất (2 Tấm Nối Tiếp)
+
+### Tấm 1: Tia Sét Giáng Xuống & Chạm Đất (`Sheet 1 of 2: Lightning Bolt Sky Descent & Ground Contact`)
 ```text
-A borderless square 1:1 animation sprite sheet containing exactly 16 separate animation frames of an opening and closing vertical side-angled dimensional warp portal facing left, floating on a continuous unbroken flat magenta #FF00FF canvas, neatly spaced in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
+A borderless square 1:1 animation sprite sheet containing exactly 16 sequential hand-drawn animation frames of PHASE 1 (JAGGED LIGHTNING BOLT DESCENDING FROM SKY AND STRIKING THE GROUND) on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
 
-CRITICAL COLOR SEPARATION & ISOLATION:
-- Background: 100% solid flat pure neon magenta #FF00FF everywhere, completely uniform brightness across all 16 frames, no gradient, no shadow.
-- ZERO-SPILL: Absolutely NO magenta inside the cyan vortex.
-- PURE VFX ONLY: No props, no walls, no terrain.
+CRITICAL BACKGROUND & ZERO-BORDER CONSTRAINTS:
+- Background: 100% solid flat uniform pure pitch-black #000000 everywhere, no grid lines, no borders, no divider lines, no horizon line. 30% empty black safety margin around every frame.
 
-ZERO-BORDER & BOUNDING BOX CONSTRAINTS:
-- Strictly NO grid lines, NO black lines, NO borders, NO divider lines, NO box outlines, NO separator lines. The entire image is ONE single seamless unbroken flat #FF00FF magenta sheet where the 16 small isolated portals float freely with generous 30% empty magenta margin on all sides.
-
-CRITICAL HUMAN-EYE RIGHT-SIDE PERSPECTIVE & 16-FRAME NARROW VERTICAL ELLIPSE LOCK:
-- Viewed from human eye level looking at a vertical portal plane standing perpendicular to the floor on the right, with its vortex mouth facing LEFT (towards 9 o'clock).
-- In ALL 16 FRAMES (strictly including peak frames 6, 7, 8, 9, 10, 11, 12), the portal MUST remain a NARROW STANDING VERTICAL ELLIPSE (strictly 1:4 width-to-height ratio — tall vertically and compressed very thin horizontally).
-- STRICTLY FORBIDDEN to draw a round 1:1 front-facing circle or a horizontal ellipse in ANY frame!
-- HUMAN-EYE OPTICAL REFLECTION: The right/front vertical rim (closest to viewer's eye) is thicker and brighter white-cyan, while the left/far vertical rim is thinner and reveals the recessed inner blue vortex wall facing left. SHORT, COMPACT tapering cyan light rays shoot strictly HORIZONTALLY from RIGHT TO LEFT (towards 9 o'clock) from the vertical elliptical ring and fade out quickly inside the safe margin.
-
-Subject & Style: dynamic 2D hand-drawn anime cartoon VFX, tall thin vertical spinning plasma whirlpool, luminous cyan rim, deep electric blue vortex core, short compact horizontal leftward light rays.
-
-Temporal Animation Progression (16 frames - ALL locked to 1:4 narrow standing vertical ellipse facing left):
-- Frames 1 to 3 (Opening): A thin vertical glowing slit opens upright and widens slightly into a small 1:4 narrow standing vertical ellipse emitting short horizontal light rays to the left.
-- Frames 4 to 6 (Vertical Expansion): The narrow 1:4 standing vertical ellipse stretches taller top-to-bottom (strictly maintaining its compressed 1:4 thin vertical ratio, ZERO circular shape), with short horizontal cyan light rays pointing left.
-- Frames 7 to 9 (Full Vertical Aperture): The side portal reaches maximum vertical height while remaining a strictly thin 1:4 standing vertical ellipse facing left (NEVER a front-facing circle), spinning with recessed inner rim depth and short compact horizontal leftward light rays.
-- Frames 10 to 12 (Vertical Contraction): The thin 1:4 standing vertical elliptical vortex shrinks shorter vertically while staying narrow horizontally, leftward rays fading.
-- Frames 13 to 16 (Closure): Snaps shut into a faint vertical spark line, then dissolves 100% into pure magenta.
+CRITICAL KINETIC PROGRESSION & CONTINUITY HANDSHAKE TO SHEET 2:
+- Every frame has freshly drawn jagged lightning geometry (no static copies):
+  - Frames 1 to 4 (High Sky Emergence): A bright white-cyan electric leader arc crackles at the top and snakes downward through the upper space; bottom area is 100% empty black.
+  - Frames 5 to 8 (Rapid Downward Bolt Extension): The jagged lightning bolt streaks further downward toward the lower third with branching side-arcs; still no ground contact yet.
+  - Frames 9 to 12 (First Ground Contact & Flash): At Frame 9, the tip of the bolt hits the invisible floor plane, igniting a flat 4:1 horizontal elliptical contact ring and initial upward electric sparks.
+  - Frames 13 to 16 (Peak Surge Charging the Impact Core): Massive surging energy pours down the main lightning column into a blinding white-cyan compressed plasma core sitting on a flat 4:1 horizontal floor ellipse at Frame 16, primed to detonate in Sheet 2!
 ```
 
-### E. Mẫu Prompt Hướng Chính Diện (`FRONT-FACING / DIRECT 0° VIEW`)
+### Tấm 2: Vụ Nổ Điện Quang & Sóng Xung Kích Mặt Đất (`Sheet 2 of 2: Ground Shockwave Explosion & Electric Aftershock`)
 ```text
-A borderless square 1:1 animation sprite sheet containing exactly 16 separate animation frames of an opening and closing direct front-facing dimensional warp portal, floating on a continuous unbroken flat magenta #FF00FF canvas, neatly spaced in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
+A borderless square 1:1 animation sprite sheet containing exactly 16 sequential hand-drawn animation frames of PHASE 2 (GROUND-LEVEL ELECTRIC SHOCKWAVE EXPLOSION AND AFTERSHOCK DISSIPATION CONTINUING DIRECTLY FROM A LIGHTNING STRIKE) on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
 
-CRITICAL COLOR SEPARATION & ISOLATION:
-- Background: 100% solid flat pure neon magenta #FF00FF everywhere, completely uniform across the entire image, no gradient, no drop shadow.
-- ZERO-SPILL: Absolutely NO magenta inside the cyan vortex.
-- PURE VFX ONLY: No props, no terrain.
+CRITICAL BACKGROUND & ZERO-BORDER CONSTRAINTS:
+- Background: 100% solid flat uniform pure pitch-black #000000 everywhere, no grid lines, no borders, no divider lines, no ground line. 30% empty black safety margin around every frame.
 
-ZERO-BORDER & BOUNDING BOX CONSTRAINTS:
-- Strictly NO grid lines, NO black lines, NO borders, NO divider lines, NO box outlines, NO separator lines. The entire image is ONE single seamless unbroken flat #FF00FF magenta sheet where the 16 small isolated portals float freely with generous 30% empty magenta margin on all sides so no tendrils ever touch or clip.
+CRITICAL HUMAN-EYE GROUND PERSPECTIVE (4:1 FLAT HORIZONTAL SHOCKWAVE ELLIPSE):
+- Viewed from a low grazing human eye angle (~15 degrees above an invisible floor): all ground shockwave rings are strictly compressed 4:1 flat horizontal ellipses, while electric arcs and plasma plumes erupt vertically UPWARD above the flat ring.
 
-CRITICAL HUMAN-EYE DIRECT 0-DEGREE FRONT PERSPECTIVE & 1:1 CIRCLE LOCK:
-- Viewed 100% directly head-on at 0-degree orthographic front view facing the viewer's eyes.
-- In ALL 16 FRAMES, the portal is a PERFECTLY SYMMETRIC 1:1 ROUND CIRCLE with concentric vortex depth pulling straight into the center of the screen, and short compact energy tendrils radiating evenly 360 degrees around the circular rim.
-- STRICTLY FORBIDDEN to draw a flat horizontal or vertical ellipse; every frame must be a small, well-contained symmetric 1:1 circle.
-
-Subject & Style: dynamic 2D hand-drawn anime cartoon VFX, spinning circular cyan-blue plasma whirlpool, concentric glowing cyan rim, deep electric blue vortex core, short compact 360-degree radial white energy tendrils.
-
-Temporal Animation Progression (16 frames - ALL locked to 1:1 concentric front-facing circle):
-- Frames 1 to 3 (Opening): A glowing central point spark opens and expands into a small concentric 1:1 circular ring.
-- Frames 4 to 6 (Radial Expansion): The 1:1 circular vortex expands symmetrically outward with spinning cyan plasma swirl.
-- Frames 7 to 9 (Full Circular Aperture): The warp gate reaches a moderate maximum 1:1 circular size (staying small enough to keep 30% empty magenta margin around it), with symmetric concentric depth and short compact orbiting energy tendrils.
-- Frames 10 to 12 (Radial Contraction): The 1:1 circular portal shrinks symmetrically inward toward its center.
-- Frames 13 to 16 (Closure): Snaps shut into a tiny central spark dot, then dissolves 100% into pure magenta.
+CRITICAL KINETIC EXPLOSION PROGRESSION (16 FRAMES):
+- Frames 1 to 4 (Core Detonation): Continuing directly from Sheet 1's charged impact core, the blinding cyan-white plasma sphere violently erupts upward into a dome of crackling lightning arcs while a sharp 4:1 flat horizontal shockwave ring blasts outward along the invisible floor.
+- Frames 5 to 8 (Expanding Ground Shockwave & Arc Eruption): The flat 4:1 horizontal shockwave ring expands wider across the floor plane as whip-like electric tendrils and glowing sparks shoot upward and outward in dynamic arcs.
+- Frames 9 to 12 (Fracturing Electric Dome & Secondary Ripples): The central blast breaks apart into dancing residual lightning arcs and scattering electric embers floating above the fading horizontal shockwave ellipse.
+- Frames 13 to 16 (Spark Decay & Clean Fadeout): Remaining tiny cyan electric sparks flicker out and dissolve completely, leaving Frame 16 100% empty pitch-black #000000.
 ```
