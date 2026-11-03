@@ -101,9 +101,9 @@ Vì vậy, khi tạo hiệu ứng có vòng đời đầy đủ hoặc có chu�
 1. **Hiệu ứng nằm trọn vẹn 100% bên trong vùng an toàn của từng frame**:
    - **Khoảng đệm an toàn tối thiểu 25-30% (Safety Margin / Padding)** quanh mỗi frame.
    - **CẤM TUYỆT ĐỐI hiện tượng cắt mép (Zero Edge-Clipping)**: Tia sáng phản chiếu phải là tia ngắn gọn (`short, compact tapering rays fading out smoothly`) để không chạm vào frame bên cạnh.
-2. **TUYỆT ĐỐI CẤM MỌI DẠNG ĐƯỜNG KẺ & VIỀN Ô (NO BORDERS / NO GRID LINES)**:
-   - `Strictly NO grid lines, NO black lines, NO borders, NO divider lines, NO box outlines, NO separator lines, NO numbers, NO text. All 16 frames float freely in open space on one single seamless unbroken flat background`.
-   - **CẤM DÙNG TỪ `"cell"` / `"each cell"` / `"per cell"` / `"grid box"` TRONG PROMPT**: Từ `"cell"` kích hoạt AI vẽ khung kẻ ô bàn cờ! Bắt buộc dùng `"around every isolated frame"` hoặc `"floating freely in open space"`.
+2. **TUYỆT ĐỐI CẤM MỌI DẠNG ĐƯỜNG KẺ & VIỀN Ô (NO BORDERS / NO GRID LINES / NO COMIC PANEL LINES)**:
+   - `Strictly NO white lines, NO grid lines, NO black lines, NO comic panel borders, NO divider lines, NO box outlines, NO separator lines, NO numbers, NO text. All frames float freely in open space on one single seamless unbroken flat background`.
+   - **CẤM DÙNG TỪ `"cell"` / `"each cell"` / `"per cell"` / `"grid box"` / `"Row 1, Row 2, Row 3"` HOẶC `"connects top-to-bottom"` TRONG PROMPT**: Từ `"cell"` hoặc mô tả tia sét chạm sát mép trên-dưới (`connects top-to-bottom`) kết hợp `"Row 1/2/3"` sẽ kích hoạt AI vẽ khung kẻ ô trắng như khung truyện tranh (comic panels)! Bắt buộc dùng `"Frames 1 to 3"`, `"self-contained and floating in open space"`, và `"never touches any edge"`.
 3. **TUYỆT ĐỐI CẤM ĐƯỜNG KẺ MẶT ĐẤT HOẶC BỐI CẢNH (NO GROUND LINE / NO HORIZON / NO PROPS)**:
    - Cấm vẽ đường chân trời, vạch kẻ ngang đáy, sàn nhà, cỏ, đá, tường.
 

@@ -113,16 +113,17 @@ CRITICAL CONTINUITY HANDSHAKE (START AT 100% FULL OPEN IN FRAME 1, THEN SPIN INW
 
 ### Tấm 1: Tia Sét Giáng Thẳng Đứng Từ Trời Xuống Đất (`Sheet 1: Vertical Lightning Strike — 9:16 Portrait, 3x3 Grid = 9 Frames`)
 ```text
-A borderless vertical 9:16 portrait animation sprite sheet containing exactly 9 sequential hand-drawn 2D anime VFX animation frames of a TALL VERTICAL SKY-TO-GROUND LIGHTNING BOLT STRIKE, floating freely on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 3 rows of 3 columns (9 frames total), ordered left-to-right then top-to-bottom.
+A borderless vertical 9:16 portrait animation sprite sheet containing exactly 9 isolated hand-drawn 2D anime VFX animation frames of a TALL VERTICAL LIGHTNING BOLT STRIKE, floating freely in open space on one single continuous unbroken flat pitch-black #000000 canvas, arranged in 3 rows of 3 columns (9 frames total), ordered left-to-right then top-to-bottom.
 
-CRITICAL BACKGROUND & ZERO-BORDER CONSTRAINTS:
-- Background: 100% solid flat uniform pure pitch-black #000000 everywhere, strictly NO checkerboard pattern, no grid lines, no borders, no divider lines, no box outlines, no horizon line. 25% empty black safety margin around every frame.
+CRITICAL ZERO-BORDER & ISOLATED FLOATING CONSTRAINTS (NO WHITE LINES!):
+- Background: 100% solid flat uniform pure pitch-black #000000 everywhere, strictly NO white lines, NO grid lines, NO comic panel borders, NO divider lines, NO box outlines, NO horizon line.
+- Every single lightning bolt MUST be completely self-contained and floating in open pitch-black space with at least 25% empty black margin on top, bottom, left, and right (the lightning NEVER touches any edge!).
 
-CRITICAL VERTICAL 9:16 PROPORTION & SOFT PLASMA GLOW AFTERIMAGE:
-- Because each of the 9 frames has a tall 9:16 vertical proportion, the lightning bolt stretches dramatically along the vertical axis surrounded by a soft diffused cyan-blue plasma bloom and electric afterimage glow:
-  - Row 1 (Frames 1 to 3 - High Sky Emergence & Rapid Downward Bolt): Frame 1 sparks near the top sky; Frame 2 zigzags halfway down; Frame 3 streaks 80% down toward the bottom with branching side-arcs and soft cyan plasma glow.
-  - Row 2 (Frames 4 to 6 - Ground Contact & Full Vertical Lightning Column): In Frame 4 the bolt tip strikes the invisible floor at the bottom, igniting a flat horizontal electric contact ring; in Frames 5 and 6 a massive blazing white-cyan vertical lightning column connects top-to-bottom with whipping electric branches and soft glowing mist.
-  - Row 3 (Frames 7 to 9 - Overcharged Ground Plasma Core): Across Frames 7 to 9 the upper bolt snaps and channels all its remaining energy downward into a blinding, crackling cyan-white plasma sphere and flat horizontal electric shockwave ring at the bottom of Frame 9, ready to detonate in Sheet 2!
+CRITICAL VERTICAL 9:16 PROPORTION & SOFT PLASMA GLOW AFTERIMAGE (9 FRAMES):
+- Each isolated vertical lightning frame has a soft diffused cyan-blue plasma bloom and electric afterimage glow:
+  - Frames 1 to 3 (Upper Spark & Rapid Downward Extension): Frame 1 begins as a compact floating electric spark cluster; Frame 2 zigzags downward into a short vertical bolt; Frame 3 extends further downward with branching side-arcs and soft cyan plasma mist, floating freely in black space.
+  - Frames 4 to 6 (Floating Ground-Ring Contact & Blazing Vertical Bolt): In Frame 4 the bottom tip hits a small floating flat horizontal electric ring; in Frames 5 and 6 a self-contained vertical lightning bolt crackles into the floating horizontal electric ring with whipping branches and soft glowing cyan mist.
+  - Frames 7 to 9 (Overcharged Plasma Core & Fading Afterimage): Across Frames 7 to 9 the upper bolt dissolves downward into a glowing cyan-white plasma sphere sitting on a floating flat horizontal electric shockwave ring with soft fading mist.
 ```
 
 ### Tấm 2: Vụ Nổ Điện Quang & Sóng Xung Kích Mặt Đất (`Sheet 2 of 2: Ground Shockwave Explosion & Electric Aftershock`)
