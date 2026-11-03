@@ -25,12 +25,12 @@ Kỹ năng này kết hợp trực tiếp với rule `.agents/rules/vfx_animatio
   - Khi chọn tỉ lệ ảnh, phải xét **TỔNG THỂ HÌNH KHỐI = Phần Lõi Chính + Lớp Bóng Mờ / Sương Hào Quang Lan Tỏa Xung Quanh**.
   - **Ưu tiên lưới `3 hàng × 3 cột = 9 frames` (`3×3 Grid`)** cho các hoạt ảnh **Animate Loop** vì mỗi ô frame rộng gấp `1.78 lần` so với `4×4`, giúp phần bóng mờ có không gian tan hết về `0%` vào nền phẳng ngay bên trong lòng frame, tuyệt đối không bị cắt phẳng ngang ở đỉnh (`NO flat-topped mist cut-off`) và không chạm mép ảnh!
   - **CẤM viết `"100% full width"` / `"100% size"`** trong prompt (vì AI sẽ vẽ tràn sát mép ô frame làm phần bóng mờ bị cắt cụt). Thay bằng: `"compact full mature size (the entire effect INCLUDING its outermost mist and motion-blur shadow occupies at most 55% of its frame space, fading smoothly to 0% into pure flat background well inside the frame boundary with 45% empty background padding all around)"`.
-- **Bảng ánh xạ Hình Thái Hiệu Ứng → Tỉ Lệ Khung Ảnh**:
-  1. **Hiệu ứng kéo rộng ngang (`16:9` — `IMAGE_ASPECT_RATIO_LANDSCAPE`)**: Cổng dịch chuyển mặt đất/bầu trời elip ngang (lớp sương bóng mờ ôm thấp sát vòng xoáy), Sóng xung kích mặt đất, Vệt chém kiếm ngang.
-  2. **Hiệu ứng bè ngang kèm vòm bóng mờ bốc lên vừa phải (`4:3` hoặc `1:1`)**: Cổng mặt đất có cột sương bốc cao, Vụ nổ vòm mặt đất.
+- **Bảng ánh xạ Tổng Thể Hình Thái (Lõi + Bóng Mờ) → Tỉ Lệ Khung Ảnh (`aspect_ratio`)**:
+  1. **Hiệu ứng kéo rộng ngang dẹt, bóng mờ ôm sát mặt ngang (`16:9` — `IMAGE_ASPECT_RATIO_LANDSCAPE`)**: Cổng dịch chuyển mặt đất/bầu trời elip ngang `4:1` (bóng mờ dư ảnh ôm sát vành ngang, không bốc cột sương cao), Sóng xung kích mặt đất, Vệt chém kiếm ngang.
+  2. **Hiệu ứng ngang nhưng có cột bóng mờ / sương hào quang bốc lên trên (`4:3` — `IMAGE_ASPECT_RATIO_LANDSCAPE_FOUR_THREE`)**: Cổng mặt đất có làn sương hào quang bốc lên phía trên (dùng `4:3` thay vì `16:9` để có thêm chiều cao cho phần bóng mờ bốc lên, **tránh tuyệt đối lỗi bóng mờ chạm trần frame bị cắt cụt ngang**!), Đám lửa cháy ngang bốc khói, Vụ nổ vòm mặt đất.
   3. **Hiệu ứng tròn đều đối xứng tâm 360° (`1:1` — `IMAGE_ASPECT_RATIO_SQUARE`)**: Quả cầu năng lượng xoay Loop (`Energy Orb`), Khiên ma pháp cầu, Cổng chính diện `0°`.
-  4. **Hiệu ứng vươn cao vừa phải (`3:4` hoặc `9:16`)**: Ngọn lửa phép thuật cháy bập bùng tại chỗ Loop (`Magic Flame Loop`), Hào quang nhân vật.
-  5. **Hiệu ứng kéo cao thẳng đứng (`9:16` — `IMAGE_ASPECT_RATIO_PORTRAIT`)**: Sấm sét thẳng đứng, Cột lốc xoáy cao (`Tornado Loop`), Cột sáng, Cổng dựng đứng bên Trái/Phải.
+  4. **Hiệu ứng vươn cao vừa phải (`3:4` — `IMAGE_ASPECT_RATIO_PORTRAIT_THREE_FOUR`)**: Ngọn lửa phép thuật cháy bập bùng tại chỗ Loop (`Magic Flame Loop`), Hào quang nhân vật.
+  5. **Hiệu ứng kéo cao thẳng đứng (`9:16` — `IMAGE_ASPECT_RATIO_PORTRAIT`)**: Sấm sét thẳng đứng, Cột lốc xoáy điện cao (`Lightning Tornado Loop`), Cột sáng, Cổng dựng đứng bên Trái/Phải.
 
 ### 1.2. Chọn Màu Nền Linh Hoạt Không Trùng Chi Tiết
 - **KHÔNG bắt buộc dùng nền Tím (`#FF00FF`) hay Xanh lá (`#00FF00`)**.
