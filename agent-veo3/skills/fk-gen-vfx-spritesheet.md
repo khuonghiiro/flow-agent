@@ -20,15 +20,17 @@ Kỹ năng này kết hợp trực tiếp với rule `.agents/rules/vfx_animatio
 
 ## 1. Quy Tắc Chọn Tỉ Lệ Khung Ảnh (`16:9` / `9:16` / `1:1`), Lưới (`4×4` hoặc `3×3`) & Màu Nền Linh Hoạt
 
-### 1.1. Chọn Tỉ Lệ Khung Hình & Bố Cục Lưới Theo Chiều Kéo Rộng / Kéo Cao Của Hiệu Ứng
-- **Hiệu ứng kéo rộng ngang** (như **Cổng Dịch Chuyển Mặt Đất / Trên Trời** elip dẹt ngang `3.5:1 – 4:1` trong chuỗi `Mở Cổng → Xoáy Lặp 360° → Đóng Cổng`, hoặc Sóng xung kích mặt đất):
-  - **`aspect_ratio`**: `IMAGE_ASPECT_RATIO_LANDSCAPE` (`16:9`).
-  - **Lưới**: `4 hàng × 4 cột = 16 frames` (hoặc `3×3 = 9 frames`). Khung `16:9` giúp mỗi ô frame con có bề ngang rộng rãi, vòng xoáy ngang và lớp bóng mờ sương khói bung hết cỡ mà không bị bó hẹp.
-- **Hiệu ứng kéo cao thẳng đứng** (như **Tia Sét Giáng Thẳng Đứng**, Cột Sáng, hoặc **Cổng Dịch Chuyển Bên Trái / Bên Phải** elip dựng đứng `1:4`):
-  - **`aspect_ratio`**: `IMAGE_ASPECT_RATIO_PORTRAIT` (`9:16`).
-  - **Lưới**: Với **Tia Sét Thẳng Đứng**, ưu tiên dùng **`3 hàng × 3 cột = 9 frames` (`3×3 Grid`)** để mỗi frame có chiều cao vút `9:16` và bề ngang thoáng đãng; với Cổng Dọc Trái/Phải có thể dùng `4×4 (16 frames)` hoặc `3×3 (9 frames)`.
-- **Hiệu ứng tròn đều đối xứng tâm** (như **Cổng Chính Diện `0°`**, Quả cầu năng lượng):
-  - **`aspect_ratio`**: `IMAGE_ASPECT_RATIO_SQUARE` (`1:1`), lưới `4×4 = 16 frames`.
+### 1.1. Chọn Tỉ Lệ Khung Hình (`16:9`, `4:3`, `1:1`, `3:4`, `9:16`) & Lưới (`3×3 = 9 Frames` hoặc `4×4 = 16 Frames`) Theo Tổng Thể (Lõi + Bóng Mờ)
+- **Nguyên tắc chống cắt bóng mờ (`Zero Shadow/Mist Clipping`)**:
+  - Khi chọn tỉ lệ ảnh, phải xét **TỔNG THỂ HÌNH KHỐI = Phần Lõi Chính + Lớp Bóng Mờ / Sương Hào Quang Lan Tỏa Xung Quanh**.
+  - **Ưu tiên lưới `3 hàng × 3 cột = 9 frames` (`3×3 Grid`)** cho các hoạt ảnh **Animate Loop** vì mỗi ô frame rộng gấp `1.78 lần` so với `4×4`, giúp phần bóng mờ có không gian tan hết về `0%` vào nền phẳng ngay bên trong lòng frame, tuyệt đối không bị cắt phẳng ngang ở đỉnh (`NO flat-topped mist cut-off`) và không chạm mép ảnh!
+  - **CẤM viết `"100% full width"` / `"100% size"`** trong prompt (vì AI sẽ vẽ tràn sát mép ô frame làm phần bóng mờ bị cắt cụt). Thay bằng: `"compact full mature size (the entire effect INCLUDING its outermost mist and motion-blur shadow occupies at most 55% of its frame space, fading smoothly to 0% into pure flat background well inside the frame boundary with 45% empty background padding all around)"`.
+- **Bảng ánh xạ Hình Thái Hiệu Ứng → Tỉ Lệ Khung Ảnh**:
+  1. **Hiệu ứng kéo rộng ngang (`16:9` — `IMAGE_ASPECT_RATIO_LANDSCAPE`)**: Cổng dịch chuyển mặt đất/bầu trời elip ngang (lớp sương bóng mờ ôm thấp sát vòng xoáy), Sóng xung kích mặt đất, Vệt chém kiếm ngang.
+  2. **Hiệu ứng bè ngang kèm vòm bóng mờ bốc lên vừa phải (`4:3` hoặc `1:1`)**: Cổng mặt đất có cột sương bốc cao, Vụ nổ vòm mặt đất.
+  3. **Hiệu ứng tròn đều đối xứng tâm 360° (`1:1` — `IMAGE_ASPECT_RATIO_SQUARE`)**: Quả cầu năng lượng xoay Loop (`Energy Orb`), Khiên ma pháp cầu, Cổng chính diện `0°`.
+  4. **Hiệu ứng vươn cao vừa phải (`3:4` hoặc `9:16`)**: Ngọn lửa phép thuật cháy bập bùng tại chỗ Loop (`Magic Flame Loop`), Hào quang nhân vật.
+  5. **Hiệu ứng kéo cao thẳng đứng (`9:16` — `IMAGE_ASPECT_RATIO_PORTRAIT`)**: Sấm sét thẳng đứng, Cột lốc xoáy cao (`Tornado Loop`), Cột sáng, Cổng dựng đứng bên Trái/Phải.
 
 ### 1.2. Chọn Màu Nền Linh Hoạt Không Trùng Chi Tiết
 - **KHÔNG bắt buộc dùng nền Tím (`#FF00FF`) hay Xanh lá (`#00FF00`)**.

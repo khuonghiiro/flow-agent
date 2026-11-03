@@ -4,18 +4,23 @@ Tài liệu này là quy tắc bắt buộc áp dụng khi nhận yêu cầu t�
 
 ---
 
-## 1. Quy Tắc Chọn Tỉ Lệ Khung Ảnh (`16:9` / `9:16` / `1:1`) & Lưới (`4×4 = 16 Frames` hoặc `3×3 = 9 Frames`) Theo Hình Thái Kéo Rộng / Kéo Cao Của Hiệu Ứng
+## 1. Quy Tắc Chọn Tỉ Lệ Khung Ảnh (`16:9` / `4:3` / `1:1` / `3:4` / `9:16`) & Lưới (`3×3 = 9 Frames` hoặc `4×4 = 16 Frames`) Theo Tổng Thể Hình Khối Hiệu Ứng (Lõi + Bóng Mờ)
 
-> 💡 **NGUYÊN LÝ HÌNH HỌC CỐT LÕI**: Khi chia bức ảnh thành lưới có số hàng bằng số cột (`4×4 = 16 frames` hoặc `3×3 = 9 frames`), **tỉ lệ khung của từng ô frame con sẽ BẰNG ĐÚNG tỉ lệ khung của bức ảnh tổng thể (`16:9`, `9:16`, hoặc `1:1`)**!
-> Do đó, thay vì luôn ép mọi hiệu ứng vào khung `1:1`, **BẮT BUỘC chọn tỉ lệ khung hình và kích thước lưới dựa theo chiều kéo rộng (ngang) hay kéo cao (dọc) của hiệu ứng** (đặc biệt ở **Pha Xoáy Lặp 360° / Full Size** trong chuỗi 3 tấm nối tiếp, hoặc các hiệu ứng thẳng đứng như Tia Sét):
+> 💡 **NGUYÊN LÝ HÌNH HỌC & CHỐNG CẮT BÓNG MỜ CỐT LÕI**:
+> 1. Khi chia bức ảnh thành lưới có số hàng bằng số cột (`3×3 = 9 frames` hoặc `4×4 = 16 frames`), **tỉ lệ khung của từng ô frame con sẽ BẰNG ĐÚNG tỉ lệ khung của bức ảnh tổng thể**!
+> 2. **Ưu tiên dùng lưới `3×3` (3 hàng × 3 cột = 9 frames)** cho các hoạt ảnh **Animate Loop** hoặc hiệu ứng có lớp bóng mờ/hào quang rộng, vì mỗi ô frame trong lưới `3×3` có diện tích lớn gấp **1.78 lần** so với lưới `4×4`, tạo khoảng đệm rộng rãi để phần bóng mờ không bị khung frame cắt mất.
+> 3. **Khi chọn tỉ lệ ảnh, BẮT BUỘC phải tính theo TỔNG THỂ HÌNH KHỐI CỦA HIỆU ỨNG = (Phần Lõi Chính + Phần Bóng Mờ / Sương Hào Quang Lan Tỏa Xung Quanh)**:
+>    - Nếu phần lõi nằm ngang nhưng có cột bóng mờ/sương khói bốc cao lên trên, mà dùng khung quá dẹt hoặc vẽ quá to thì đỉnh bóng mờ sẽ chạm trần ô frame và bị cắt phẳng! Khi đó phải **chọn tỉ lệ ảnh phù hợp với cả phần bóng mờ** VÀ **giới hạn tổng kích thước (Lõi + Bóng mờ) chỉ chiếm tối đa `55%–60%` diện tích ô frame**.
 
-| Hình Thái Không Gian Của Hiệu Ứng | Tỉ Lệ Khung Ảnh (`aspect_ratio`) | Bố Cục Lưới Chuẩn (`Grid Layout`) | Ứng Dụng Cụ Thể Trong Chuỗi Hoạt Ảnh |
+| Hình Thái Tổng Thể (Lõi Hiệu Ứng + Bóng Mờ / Hào Quang) | Tỉ Lệ Khung Ảnh Phù Hợp | Bố Cục Lưới Khuyên Dùng | Ví Dụ Hiệu Ứng Cụ Thể |
 |---|---|---|---|
-| **1. Hiệu Ứng Kéo Rộng Ngang (`Horizontal / Wide-Span VFX`)** | **`16:9` (`IMAGE_ASPECT_RATIO_LANDSCAPE`)** | **`4 hàng × 4 cột = 16 Frames`** (hoặc `3×3 = 9 Frames`) | - **Cổng Dịch Chuyển Mặt Đất (`Ground Portal`) & Trên Trời (`Sky Portal`)** (elip dẹt ngang `3.5:1 – 4:1`) trong chuỗi **3 Tấm Nối Tiếp (`Mở Cổng → Xoáy Lặp 360° → Đóng Cổng`)**: Khi xoáy lặp 360° ở kích thước mở cực đại, cổng kéo rộng theo phương ngang nên dùng `16:9` giúp mỗi ô frame là một hình chữ nhật ngang rộng rãi, vòng xoáy và bóng mờ bung hết cỡ không bị bó hẹp.<br>- **Sóng xung kích mặt đất (`Ground Shockwave`)**, vệt chém ngang (`Horizontal Slash`). |
-| **2. Hiệu Ứng Kéo Cao Thẳng Đứng (`Vertical / Tall-Span VFX`)** | **`9:16` (`IMAGE_ASPECT_RATIO_PORTRAIT`)** | - **`3 hàng × 3 cột = 9 Frames` (`3×3 Grid`)** cho **Tia Sét / Cột Sáng thẳng đứng**.<br>- **`4×4 (16 Frames)` hoặc `3×3 (9 Frames)`** cho **Cổng Dọc Trái/Phải**. | - **Tia Sét Giáng Thẳng Đứng (`Vertical Lightning Strike`), Cột Sáng, Lốc Xoáy Cao**: Dùng **`9:16` với lưới `3 hàng × 3 cột (9 frames)`** giúp mỗi frame là một ô chữ nhật đứng cao vút và rộng rãi (diện tích lớn gấp ~1.8 lần ô `4×4`), tia sét phóng dài từ đỉnh trời xuống mặt đất không bị cụt lủn.<br>- **Cổng Dịch Chuyển Hướng Bên Trái / Bên Phải (`Left/Right Vertical Portal 1:4`)** khi xoáy lặp 360° kéo cao theo chiều dọc → dùng **`9:16`**. |
-| **3. Hiệu Ứng Tròn Đều Đối Xứng Tâm (`Radial / Symmetrical VFX`)** | **`1:1` (`IMAGE_ASPECT_RATIO_SQUARE`)** | **`4 hàng × 4 cột = 16 Frames`** (hoặc `3×3 = 9 Frames`) | - **Cổng Dịch Chuyển Chính Diện (`Direct Front 0° Circle`)**, Quả cầu năng lượng (`Energy Orb`), Khiên tròn, Vụ nổ tâm cầu đối xứng 360°. |
+| **1. Kéo Rộng Ngang (`Horizontal Wide-Span`)** | **`16:9` (`IMAGE_ASPECT_RATIO_LANDSCAPE`)** | **`3×3 (9 Frames)`** hoặc `4×4 (16 Frames)` | - **Cổng dịch chuyển mặt đất / trên trời** (elip dẹt ngang, lớp bóng mờ và sương xoáy là là ôm sát mặt phẳng ngang).<br>- **Sóng xung kích lan ngang mặt đất**, **Vệt chém kiếm ngang**, **Luồng chưởng bắn ngang**. |
+| **2. Bè Ngang Vừa Phải Kèm Bóng Mờ / Khói Bốc Lên (`Moderate Horizontal + Rising Aura`)** | **`4:3` hoặc `16:9` / `1:1`** (tùy độ cao bóng mờ) | **`3×3 (9 Frames)`** | - **Cổng mặt đất có vòm sương hào quang bốc cao vừa phải**, **Đám lửa trại cháy ngang bốc khói**, **Vụ nổ mặt đất dạng vòm bán cầu**. |
+| **3. Tròn Đều / Đối Xứng Tâm 360° (`Radial / Symmetrical 1:1`)** | **`1:1` (`IMAGE_ASPECT_RATIO_SQUARE`)** | **`3×3 (9 Frames)`** hoặc `4×4 (16 Frames)` | - **Quả cầu năng lượng xoay Loop (`Energy Orb`)**, **Khiên ma pháp cầu tròn**, **Vòng ma pháp / Cổng dịch chuyển chính diện `0°`**, **Vụ nổ trên không tỏa tròn 360°**. |
+| **4. Hơi Vươn Cao Dọc Vừa Phải (`Moderate Vertical`)** | **`3:4` hoặc `9:16`** | **`3×3 (9 Frames)`** | - **Ngọn lửa phép thuật cháy bập bùng tại chỗ (`Looping Magic Flame`)**, **Linh hồn / Hào quang nhân vật bốc lên**, **Suối nước / Bụi phép bay lên**. |
+| **5. Kéo Cao Thẳng Đứng (`Tall Vertical-Span`)** | **`9:16` (`IMAGE_ASPECT_RATIO_PORTRAIT`)** | **`3×3 (9 Frames)`** | - **Tia sét / Cột điện giáng thẳng đứng (`Vertical Lightning`)**, **Cột lốc xoáy cao (`Tornado Vortex Loop`)**, **Cột sáng thiên phạt**, **Cổng dịch chuyển dựng đứng bên Trái / Phải (`1:4`)**. |
 
-- **Lưu ý đồng bộ trong Chuỗi 3 Tấm (`Mở Cổng → Xoáy Lặp 360° → Đóng Cổng`)**: Nếu hiệu ứng ở pha **Xoáy Lặp 360°** kéo rộng ngang (`16:9`) hoặc kéo cao dọc (`9:16`), khuyến nghị dùng **cùng tỉ lệ `16:9` (hoặc `9:16`) cho cả 3 tấm Mở → Xoáy Lặp → Đóng** để khi cắt frame ghép nối tiếp giữa Tấm 1, Tấm 2 và Tấm 3, kích thước khung hình từng frame khớp nhau 100% không bị lệch tỉ lệ.
+- **Lưu ý đồng bộ trong Chuỗi 3 Tấm (`Mở Cổng → Xoáy Lặp 360° → Đóng Cổng`)**: Cả 3 tấm trong cùng một chuỗi hiệu ứng phải dùng chung cùng một tỉ lệ khung ảnh và cùng bố cục lưới để kích thước cắt frame khớp nhau 100%.
 
 ---
 
@@ -96,11 +101,16 @@ Vì vậy, khi tạo hiệu ứng có vòng đời đầy đủ hoặc có chu�
 
 ---
 
-## 5. Quy Tắc Giới Hạn Bounding Box, Đệm An Toàn & CẤM Viền Khung (STRICT BBOX & ZERO BORDERS)
+## 5. Quy Tắc Giới Hạn Bounding Box, CẤM Bóng Mờ Lan Ra Ngoài Frame & CẤM Viền Khung (ZERO SHADOW/MIST CLIPPING & ZERO BORDERS)
 
-1. **Hiệu ứng nằm trọn vẹn 100% bên trong vùng an toàn của từng frame**:
-   - **Khoảng đệm an toàn tối thiểu 25-30% (Safety Margin / Padding)** quanh mỗi frame.
-   - **CẤM TUYỆT ĐỐI hiện tượng cắt mép (Zero Edge-Clipping)**: Tia sáng phản chiếu phải là tia ngắn gọn (`short, compact tapering rays fading out smoothly`) để không chạm vào frame bên cạnh.
+> ⚠️ **LỖI NGHIÊM TRỌNG CẦN TRÁNH ("BÓNG MỜ BỊ KHUNG FRAME CHE / CẮT MẤT")**:
+> - Nếu viết trong prompt là `"100% full width"` hoặc vẽ hiệu ứng quá to trong ô frame, phần **bóng mờ / làn sương hào quang phía trên hoặc hai bên (`rising mist / outer glow shadow`)** sẽ vượt ra tới ranh giới vô hình giữa các hàng/cột và bị **cắt cụt phẳng ngang (`flat-topped horizontal cut-off / hard bounding-box clipping`)**, hoặc tràn sang frame bên cạnh, hoặc bị mép ảnh cắt mất!
+
+1. **Toàn bộ Hiệu Ứng + Lớp Bóng Mờ Ngoài Cùng Phải Nằm Gọn 100% Trong Lòng Frame (Tối đa 55%–60% diện tích ô frame)**:
+   - **CẤM DÙNG cụm từ `"100% full width"` / `"fills 100% of the space"`**: Cụm từ này làm AI phóng hiệu ứng tràn sát mép ô frame khiến phần bóng mờ bị cắt cụt! Thay vào đó, **BẮT BUỘC dùng `"compact full mature size (occupying at most 55% of its isolated frame space, leaving 45% pure flat empty background padding all around)"`**.
+   - **Bóng mờ phải tan hết về `0%` TRƯỚC KHI chạm ranh giới frame**:
+     - `The entire effect INCLUDING the outermost tip of its soft motion-blur shadow and rising mist MUST fade out completely to 0% opacity into the pure background WELL INSIDE its own frame space — STRICTLY FORBIDDEN to let the mist or shadow get cut off flat at the top, bottom, left, or right boundary of any frame, and NEVER bleed into neighboring frames!`
+   - **Nếu bóng mờ/hào quang cần vươn cao hoặc vươn rộng hơn**: Phải chủ động **chọn lại tỉ lệ khung ảnh tổng thể (`16:9`, `4:3`, `1:1`, `3:4`, `9:16`)** và **thu gọn kích thước lõi hiệu ứng** để cả phần lõi lẫn phần bóng mờ đều nằm lọt thỏm thoải mái bên trong từng ô frame!
 2. **TUYỆT ĐỐI CẤM MỌI DẠNG ĐƯỜNG KẺ & VIỀN Ô (NO BORDERS / NO GRID LINES / NO COMIC PANEL LINES)**:
    - `Strictly NO white lines, NO grid lines, NO black lines, NO comic panel borders, NO divider lines, NO box outlines, NO separator lines, NO numbers, NO text. All frames float freely in open space on one single seamless unbroken flat background`.
    - **CẤM DÙNG TỪ `"cell"` / `"each cell"` / `"per cell"` / `"grid box"` / `"Row 1, Row 2, Row 3"` HOẶC `"connects top-to-bottom"` TRONG PROMPT**: Từ `"cell"` hoặc mô tả tia sét chạm sát mép trên-dưới (`connects top-to-bottom`) kết hợp `"Row 1/2/3"` sẽ kích hoạt AI vẽ khung kẻ ô trắng như khung truyện tranh (comic panels)! Bắt buộc dùng `"Frames 1 to 3"`, `"self-contained and floating in open space"`, và `"never touches any edge"`.
