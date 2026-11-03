@@ -7,6 +7,8 @@ __pycache__/
 flow_generation_hold.json
 flow_generation_hold.tmp
 .env
+.venv
+.git_bk
 output/
 youtube/channels/
 agent/active_project.json
