@@ -25,7 +25,7 @@ Tài liệu này là quy tắc bắt buộc áp dụng khi nhận yêu cầu t�
 | **Hiệu ứng Băng, Nước, Sét xanh, Cổng không gian Cyan (Xanh lam, Cyan, Trắng)** | **Đen tuyền (`#000000`)**, **Đỏ rượu tối (`#2B0015`)**, **Tím (`#FF00FF`)**, hoặc **Vàng đất sẫm** | Cấm dùng nền Xanh dương, Xanh ngọc, Trắng. |
 
 ### 3 Nguyên tắc bất biến về màu nền:
-1. **Nền phẳng tuyệt đối (100% Solid Flat Uniform Canvas)**: Chỉ duy nhất 1 mã màu đồng nhất trên toàn bộ ảnh, không gradient, không bóng đổ, không vignette.
+1. **Nền phẳng tuyệt đối (100% Solid Flat Uniform Canvas — NO Checkerboard)**: Chỉ duy nhất 1 mã màu đồng nhất trên toàn bộ ảnh, không gradient, không bóng đổ, không vignette, và **tuyệt đối CẤM vẽ họa tiết bàn cờ trong suốt (`strictly NO checkerboard pattern`)** khi hiệu ứng có lớp bóng mờ/sương mờ.
 2. **Không trùng màu chi tiết (Zero Color Overlap)**: Màu nền phải tách biệt 100% với bảng màu của hiệu ứng để dễ dàng tách nền (keying / luma matte / screen blending).
 3. **Đồng nhất màu nền trong cùng một chuỗi hiệu ứng nối tiếp**: Nếu một hiệu ứng gồm nhiều tấm ảnh nối tiếp nhau (Tấm 1 -> Tấm 2 -> Tấm 3), tất cả các tấm trong chuỗi đó phải dùng chung **cùng 1 mã màu nền**.
 

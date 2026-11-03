@@ -80,13 +80,13 @@ CRITICAL CONTINUOUS CLOCKWISE SWIRLING FLOW ACROSS ALL 16 FRAMES:
 A borderless square 1:1 animation sprite sheet containing exactly 16 sequential hand-drawn 2D anime VFX animation frames of PHASE 3 ONLY (VORTEX CONTRACTION AND CLOSURE STARTING FROM 100% FULL OPEN SIZE IN FRAME 1) of a ground-level dimensional warp portal, floating freely on a single continuous unbroken flat pitch-black #000000 canvas, neatly arranged in 4 rows of 4 columns, ordered left-to-right then top-to-bottom.
 
 CRITICAL BACKGROUND & ZERO-BORDER CONSTRAINTS:
-- Background: 100% solid flat uniform pure pitch-black #000000 everywhere, no grid lines, no borders, no divider lines, no box outlines, no text. 30% empty black safety margin around every frame.
+- Background: 100% solid flat uniform pure pitch-black #000000 everywhere, strictly NO checkerboard pattern, no grid lines, no borders, no divider lines, no box outlines, no text. 30% empty black safety margin around every frame.
 
 CRITICAL HUMAN-EYE GROUND PERSPECTIVE & 4:1 FLAT HORIZONTAL VORTEX LOCK:
 - Viewed from a fixed low grazing human eye angle (~15 degrees above an invisible floor): every active frame is a flat horizontal swirling whirlpool (3.5:1 width-to-height ratio) lying level and flat on the invisible floor.
 
 CRITICAL SILKY MOTION-BLUR SHADOW & ETHEREAL MIST (NO HARD RINGS!):
-- Every active frame features soft feathered plasma ribbons, trailing semi-transparent cyan-blue MOTION-BLUR AFTERIMAGE SHADOW TRAILS, and a soft Swirling Diffused Mist Veil rising above the vortex! STRICTLY FORBIDDEN to draw hard-edged solid chalky white rings!
+- Every active frame features soft feathered plasma ribbons, trailing soft cyan-blue MOTION-BLUR AFTERIMAGE SHADOW TRAILS, and a soft Swirling Diffused Mist Veil rising above the vortex! STRICTLY FORBIDDEN to draw hard-edged solid chalky white rings!
 
 CRITICAL CONTINUITY HANDSHAKE (START AT 100% FULL OPEN IN FRAME 1, THEN SPIN INWARD & DISSOLVE):
 - Frame-by-frame progression (16 frames of smooth silky closing ONLY):
